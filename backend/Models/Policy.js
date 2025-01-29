@@ -8,13 +8,12 @@ const policySchema = new mongoose.Schema(
       ref: "Client",
       required: true,
     },
-    companyName: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Company",
-        required: true,
-      },
-    ],
+    companyName: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
+
     mainCategory: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "MainCategory",

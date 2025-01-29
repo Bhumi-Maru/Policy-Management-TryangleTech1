@@ -31,20 +31,19 @@ const addPolicy = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Ensure companyName is an array of ObjectIds
-    if (!Array.isArray(companyName) || companyName.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "companyName should be an array of ObjectIds" });
-    }
-
     // Check if 'policyAttachment' file exists
-    if (!req.files || !req.files.policyAttachment) {
+    if (
+      !req.files ||
+      !req.files.policyAttachment ||
+      req.files.policyAttachment.length === 0
+    ) {
       return res.status(400).json({ message: "Policy attachment is required" });
     }
 
-    // Get the policy attachment file path
-    const policyAttachment = `/uploads/${req.files.policyAttachment[0].filename}`;
+    // Get the policy attachment file paths (for multiple files)
+    const policyAttachment = req.files.policyAttachment.map(
+      (file) => `/uploads/${file.filename}`
+    );
 
     // Create the policy
     const policy = await Policy.create({
@@ -93,7 +92,7 @@ const getPolicyById = async (req, res) => {
     const { id } = req.params;
     const policy = await Policy.findById(id)
       .populate("clientName", "firstName lastName")
-      .populate("companyName", "companyName") 
+      .populate("companyName", "companyName")
       .populate("mainCategory", "mainCategoryName")
       .populate("subCategory", "subCategoryName");
     if (!policy) {

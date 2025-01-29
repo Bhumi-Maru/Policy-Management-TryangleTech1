@@ -13,14 +13,13 @@ export default function UpdatePolicy() {
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     clientName: "",
-    companyName: [""],
+    companyName: "",
     mainCategory: "",
     subCategory: "",
-    entryDate: [new Date()],
-    issueDate: [""],
-    expiryDate: [""],
-    policyAmount: [""],
-    policyAttachment: [],
+    issueDate: "",
+    expiryDate: "",
+    policyAmount: "",
+    policyAttachment: null,
   });
   const [policy, setPolicy] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -80,12 +79,11 @@ export default function UpdatePolicy() {
   };
 
   // Options for dropdowns
-  const clientOptions = (clients || []).map((client) => ({
+  const clientOptions = clients.map((client) => ({
     value: client._id,
     label: `${client.firstName} ${client.lastName || ""}`.trim(),
   }));
 
-  //company
   const companyOptions = (companies || []).map((company) => ({
     value: company._id,
     label: company.companyName,
@@ -131,13 +129,8 @@ export default function UpdatePolicy() {
 
   console.log("updatedSubCategoryOptions", updatedSubCategoryOptions);
 
-  const handleSelectChange = (field, selectedOption) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [field]: Array.isArray(selectedOption)
-        ? selectedOption.map((opt) => opt.value)
-        : selectedOption?.value || "",
-    }));
+  const handleSelectChange = (field, option) => {
+    setFormData({ ...formData, [field]: option ? option.value : null });
   };
 
   const handleInputChange = (e) => {
@@ -145,55 +138,18 @@ export default function UpdatePolicy() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleArrayChange = (field, index, value) => {
-    setFormData((prevData) => {
-      const updatedArray = [...prevData[field]];
-      updatedArray[index] = value;
-      return { ...prevData, [field]: updatedArray };
-    });
-  };
-
-  const addNewField = (field) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [field]: [...prevData[field], ""],
-    }));
-  };
-
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData((prevData) => ({
-        ...prevData,
-        policyAttachment: [...(prevData.policyAttachment || []), file],
-      }));
-    }
+    setFormData({ ...formData, [e.target.name]: e.target.files[0] });
   };
 
   //form 1 handle submit
   const handleSubmitFormOne = async (e) => {
     e.preventDefault();
-
-    // Simple client-side validation
-    if (
-      !formData.clientName ||
-      !formData.mainCategory ||
-      !formData.subCategory
-    ) {
-      setErrors({
-        clientName: "Client Name is required",
-        mainCategory: "Main Category is required",
-        subCategory: "Sub Category is required",
-      });
-      return;
-    }
-
     const payload = {
       clientName: formData.clientName,
       mainCategory: formData.mainCategory,
       subCategory: formData.subCategory,
     };
-
     try {
       const response = await fetch(`http://localhost:8000/api/policy/${id}`, {
         method: "PUT",
@@ -205,38 +161,62 @@ export default function UpdatePolicy() {
       if (response.status === 200) {
         showSuccessToast("Record updated successfully!");
         navigate("/policy");
-      } else {
-        showSuccessToast("Error updating record");
       }
     } catch (error) {
-      console.error("Error updating policy data:", error);
-      showSuccessToast("Error updating policy");
+      console.error("Error updating client data:", error);
     }
   };
 
   // form 2 handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Create FormData object
+    const formDataPayload = new FormData();
+
+    // Append form data fields
+    formDataPayload.append("issueDate", formData.issueDate);
+    formDataPayload.append("companyName", formData.companyName);
+    formDataPayload.append("expiryDate", formData.expiryDate);
+    formDataPayload.append("policyAmount", formData.policyAmount);
+
+    if (formData.policyAttachment) {
+      formDataPayload.append("policyAttachment", formData.policyAttachment);
+    }
+
     try {
-      const response = await fetch(
-        selectedPolicy
-          ? `http://localhost:8000/api/policy/${selectedPolicy._id}`
-          : "http://localhost:8000/api/policy",
-        {
-          method: selectedPolicy ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData), // Use formData here instead of formDataPayload
-        }
-      );
+      const response = selectedPolicy
+        ? await fetch(
+            `http://localhost:8000/api/policy/${selectedPolicy._id}`,
+            {
+              method: "PUT",
+              body: formDataPayload,
+            }
+          )
+        : await fetch("http://localhost:8000/api/policy", {
+            method: "POST",
+            body: formDataPayload,
+          });
 
       if (response.ok) {
+        const updatedPolicy = await response.json();
+        if (selectedPolicy) {
+          setPolicy(updatedPolicy);
+        } else {
+          setPolicy((prevPolicies) => [...prevPolicies, updatedPolicy]);
+        }
         showSuccessToast("Record updated successfully!");
-        navigate("/policy");
+        setSelectedPolicy(null);
+        setIsOpenPolicyAttachment(false);
+        setFormData({
+          companyName: "",
+          issueDate: "",
+          expiryDate: "",
+          policyAmount: "",
+          policyAttachment: null,
+        });
       } else {
-        const errorData = await response.json();
-        showSuccessToast(`Failed to update: ${errorData.message}`);
+        console.error("Failed to save policy:", response.statusText);
       }
     } catch (error) {
       console.error("Error saving policy:", error);
@@ -245,9 +225,11 @@ export default function UpdatePolicy() {
 
   const handleEdit = (policyData) => {
     setSelectedPolicy(policyData);
-
     setFormData({
+      clientName: policyData.clientName,
       companyName: policyData.companyName,
+      mainCategory: policyData.mainCategory,
+      subCategory: policyData.subCategory,
       issueDate: policyData.issueDate,
       expiryDate: policyData.expiryDate,
       policyAmount: policyData.policyAmount,
@@ -383,7 +365,7 @@ export default function UpdatePolicy() {
                             value={clientOptions.find(
                               (option) => option.value === formData.clientName
                             )}
-                            placeholder="Select a client"
+                            placeholder="Select a client Name"
                           />
                           {errors.clientName && (
                             <small className="text-danger">
@@ -437,7 +419,7 @@ export default function UpdatePolicy() {
                                 (option) =>
                                   option.value === formData.subCategory
                               )}
-                              placeholder="Select a main category"
+                              placeholder="Select a sub category"
                             />
                           )}
 
@@ -483,6 +465,29 @@ export default function UpdatePolicy() {
                       <p className="text-danger">Error: {error}</p>
                     ) : (
                       <>
+                        {/* Company Name */}
+                        <div className="col-md-4">
+                          <label
+                            style={{ fontSize: "13px", fontWeight: "bold" }}
+                          >
+                            Company Name
+                          </label>
+                          <Select
+                            options={companyOptions}
+                            onChange={(option) =>
+                              handleSelectChange("companyName", option)
+                            }
+                            value={companyOptions.find(
+                              (option) => option.value === formData.companyName
+                            )}
+                            placeholder="Select a company"
+                          />
+                          {errors.companyName && (
+                            <small className="text-danger">
+                              {errors.companyName}
+                            </small>
+                          )}
+                        </div>
                         {/* Issue Date */}
                         <div className="col-md-4">
                           <label
@@ -495,7 +500,7 @@ export default function UpdatePolicy() {
                             type="date"
                             name="issueDate"
                             className="form-control"
-                            value={selectedPolicy ? formData.issueDate : ""}
+                            value={formData.issueDate}
                             onChange={handleInputChange}
                           />
                           {errors.issueDate && (
@@ -517,43 +522,12 @@ export default function UpdatePolicy() {
                             type="date"
                             name="expiryDate"
                             className="form-control"
-                            value={selectedPolicy ? formData.expiryDate : ""}
+                            value={formData.expiryDate}
                             onChange={handleInputChange}
                           />
                           {errors.expiryDate && (
                             <small className="text-danger">
                               {errors.expiryDate}
-                            </small>
-                          )}
-                        </div>
-
-                        {/* Company Name */}
-                        <div className="col-md-4">
-                          <label
-                            style={{ fontSize: "13px", fontWeight: "bold" }}
-                          >
-                            Company Name
-                          </label>
-                          <Select
-                            options={updatedCompanyOptions}
-                            onChange={(option) =>
-                              handleSelectChange("companyName", option)
-                            }
-                            value={updatedCompanyOptions.find(
-                              (option) => option.value === formData.companyName
-                            )}
-                            placeholder="Select a company"
-                            isClearable
-                          />
-                          {console.log(
-                            "updatedCompanyOptions1",
-                            updatedCompanyOptions
-                          )}
-                          {console.log("formData", formData)}
-                          {/* Debugging output */}
-                          {errors.companyName && (
-                            <small className="text-danger">
-                              {errors.companyName}
                             </small>
                           )}
                         </div>
@@ -570,7 +544,7 @@ export default function UpdatePolicy() {
                             type="number"
                             name="policyAmount"
                             className="form-control"
-                            value={selectedPolicy ? formData.policyAmount : ""}
+                            value={formData.policyAmount}
                             onChange={handleInputChange}
                           />
                           {errors.policyAmount && (
@@ -602,7 +576,6 @@ export default function UpdatePolicy() {
                               {errors.policyAttachment}
                             </small>
                           )}
-
                           {isOpenPolicyAttachment && (
                             <div
                               className="mt-2 alert alert-dismissible text-white alert-label-icon fade show"
@@ -622,30 +595,13 @@ export default function UpdatePolicy() {
                                 }}
                               >
                                 {formData.policyAttachment &&
-                                Array.isArray(
-                                  selectedPolicy
-                                    ? formData.policyAttachment
-                                    : ""
-                                )
-                                  ? formData.policyAttachment.length > 0
-                                    ? formData.policyAttachment
-                                        .map((attachment) =>
-                                          typeof attachment === "string"
-                                            ? attachment
-                                                .split("/")
-                                                .pop()
-                                                .replace(/-\d+/, "")
-                                            : attachment
-                                        )
-                                        .join(", ")
-                                    : "No Policy Attachment Available"
-                                  : formData.policyAttachment &&
-                                    typeof formData.policyAttachment ===
-                                      "string"
+                                typeof formData.policyAttachment === "string"
                                   ? formData.policyAttachment
                                       .split("/")
                                       .pop()
                                       .replace(/-\d+/, "")
+                                  : formData.policyAttachment
+                                  ? formData.policyAttachment.name
                                   : "No Policy Attachment Available"}
                               </span>
                               <button
@@ -676,11 +632,11 @@ export default function UpdatePolicy() {
                             className="btn btn-success add-btn w-100"
                             style={{ fontSize: "13px" }}
                           >
-                            {!selectedPolicy && (
+                            {/* {!selectedPolicy && (
                               <i className="ri-add-line align-bottom me-1"></i>
                             )}
-                            {selectedPolicy ? "Update" : "Add"}
-                            {/* Update */}
+                            {selectedPolicy ? "Update" : "Add"} */}
+                            Update
                           </button>
                         </div>
                       </>
@@ -707,6 +663,17 @@ export default function UpdatePolicy() {
                           >
                             SR No.
                           </th>
+                          {/* company name */}
+                          <th
+                            className="companyName_sort"
+                            data-sort="companyName"
+                            style={{
+                              fontSize: ".8rem",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Company Name
+                          </th>
                           {/* Issue Date */}
                           <th
                             className="issueDate_sort"
@@ -728,16 +695,6 @@ export default function UpdatePolicy() {
                             }}
                           >
                             Expiry Date
-                          </th>
-                          {/* Expiry Date */}
-                          <th
-                            className="companyName_sort"
-                            style={{
-                              fontSize: ".8rem",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            Company Name
                           </th>
                           {/* policyAmount */}
                           <th
@@ -787,6 +744,13 @@ export default function UpdatePolicy() {
                           >
                             {index + 1}
                           </td>
+                          {/* Company Name */}
+                          <td
+                            className="issue_date"
+                            style={{ fontSize: ".8rem" }}
+                          >
+                            {policy.companyName?.companyName}
+                          </td>
                           {/* Issue Date */}
                           <td
                             className="issue_date"
@@ -802,16 +766,6 @@ export default function UpdatePolicy() {
                           >
                             {policy.expiryDate}
                           </td>
-                          {/* company name */}
-                          <td
-                            className="company_name"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {policy.companyName
-                              ? policy.companyName[0].companyName
-                              : ""}
-                          </td>
-                          {/* policy amount */}
                           <td
                             className="policy_amount"
                             style={{ fontSize: ".8rem" }}

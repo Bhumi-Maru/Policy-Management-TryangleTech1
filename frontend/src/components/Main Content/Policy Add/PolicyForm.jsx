@@ -11,7 +11,7 @@ export default function PolicyForm() {
   const [formData, setFormData] = useState({
     policyNumber: "",
     clientName: "",
-    companyPolicy: "",
+    companyName: "",
     mainCategory: "",
     subCategory: "",
     issueDate: "",
@@ -134,7 +134,11 @@ export default function PolicyForm() {
 
     const formDataWithFiles = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      formDataWithFiles.append(key, value);
+      if (key === "policyAttachment" && value) {
+        formDataWithFiles.append(key, value);
+      } else {
+        formDataWithFiles.append(key, value);
+      }
     });
 
     try {

@@ -311,11 +311,7 @@ export default function PolicyTable({ handleMenuClick }) {
                                 className="company_name"
                                 style={{ fontSize: ".8rem" }}
                               >
-                                {
-                                  policy.companyName?.[
-                                    policy.companyName.length - 1
-                                  ]?.companyName
-                                }
+                                {policy.companyName?.companyName}
                               </td>
                               {/* Sub Category */}
                               <td
