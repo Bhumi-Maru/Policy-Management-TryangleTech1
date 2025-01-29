@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  addPolicy,
+  addOrAppendPolicy,
   updatePolicy,
   getAllPolicies,
   deletePolicy,
@@ -11,7 +11,7 @@ const { uploadFields } = require("../middleware/uploadMiddleware");
 const policyRouter = express.Router();
 
 // Add policy (POST)
-policyRouter.post("/policy", uploadFields, addPolicy);
+policyRouter.post("/policy", uploadFields, addOrAppendPolicy);
 
 // Update policy (PUT)
 policyRouter.put("/policy/:id", uploadFields, updatePolicy);

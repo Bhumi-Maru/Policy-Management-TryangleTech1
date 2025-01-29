@@ -322,8 +322,13 @@ export default function UpdatePolicy() {
     const tooltipTriggerList = Array.from(
       document.querySelectorAll('[data-bs-toggle="tooltip"]')
     );
+
     tooltipTriggerList.forEach((tooltipTriggerEl) => {
-      new bootstrap.Tooltip(tooltipTriggerEl);
+      // Ensure the element has a valid title
+      const title = tooltipTriggerEl.getAttribute("title");
+      if (title) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+      }
     });
 
     return () => {
@@ -733,107 +738,107 @@ export default function UpdatePolicy() {
                         </tr>
                       </thead>
                       <tbody className="list form-check-all">
-                        {/* {policy.length > 0 ? (
-                          policy.map((policy, index) => ( */}
-                        <tr>
-                          {/* Serial Number */}
-                          <td
-                            className="serial number"
-                            data-sort="serial number"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {index + 1}
-                          </td>
-                          {/* Company Name */}
-                          <td
-                            className="issue_date"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {policy.companyName?.companyName}
-                          </td>
-                          {/* Issue Date */}
-                          <td
-                            className="issue_date"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {policy.issueDate}
-                          </td>
-
-                          {/* Expiry Date */}
-                          <td
-                            className="expiry_date"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {policy.expiryDate}
-                          </td>
-                          <td
-                            className="policy_amount"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            &nbsp; &nbsp; &nbsp; {policy.policyAmount}
-                          </td>
-                          {/* Policy Attachment Link */}
-                          <td
-                            data-column-id="other documents"
-                            style={{ textAlign: "center" }}
-                          >
-                            {policy.policyAttachment ? (
-                              <a
-                                href={`http://localhost:8000${policy.policyAttachment}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ textDecoration: "none" }}
-                                data-bs-toggle="tooltip"
-                                data-bs-placement="top"
-                                title={policy.policyAttachment}
-                                data-bs-title={policy.policyAttachment}
+                        {policy.length > 0 ? (
+                          policy.map((policy, index) => (
+                            <tr>
+                              {/* Serial Number */}
+                              <td
+                                className="serial number"
+                                data-sort="serial number"
+                                style={{ fontSize: ".8rem" }}
                               >
-                                <i
-                                  className="ri-pushpin-fill"
-                                  style={{
-                                    color: "#405189",
-                                    cursor: "pointer",
-                                    fontSize: "15px",
-                                  }}
-                                ></i>
-                              </a>
-                            ) : (
-                              <span style={{ color: "red" }}>
-                                No attachment available
-                              </span>
-                            )}
-                          </td>
+                                {index + 1}
+                              </td>
+                              {/* Company Name */}
+                              <td
+                                className="issue_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {policy.companyName?.companyName}
+                              </td>
+                              {/* Issue Date */}
+                              <td
+                                className="issue_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {policy.issueDate}
+                              </td>
 
-                          {/* Edit and Delete Actions */}
-                          <td>
-                            <div
-                              className="d-flex gap-2 justify-content-center"
-                              style={{ textAlign: "-webkit-center" }}
-                            >
-                              {/* Edit Button */}
-                              <div className="edit">
-                                {/* {console.log("Client ID:", policy.id)} */}
-                                <Link
-                                  to={`/policy-update-form/${policy._id}`}
-                                  onClick={() => handleEdit(policy)}
-                                  style={{ textDecoration: "none" }}
+                              {/* Expiry Date */}
+                              <td
+                                className="expiry_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {policy.expiryDate}
+                              </td>
+                              <td
+                                className="policy_amount"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                &nbsp; &nbsp; &nbsp; {policy.policyAmount}
+                              </td>
+                              {/* Policy Attachment Link */}
+                              <td
+                                data-column-id="other documents"
+                                style={{ textAlign: "center" }}
+                              >
+                                {policy.policyAttachment ? (
+                                  <a
+                                    href={`http://localhost:8000${policy.policyAttachment}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ textDecoration: "none" }}
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title={policy.policyAttachment}
+                                    data-bs-title={policy.policyAttachment}
+                                  >
+                                    <i
+                                      className="ri-pushpin-fill"
+                                      style={{
+                                        color: "#405189",
+                                        cursor: "pointer",
+                                        fontSize: "15px",
+                                      }}
+                                    ></i>
+                                  </a>
+                                ) : (
+                                  <span style={{ color: "red" }}>
+                                    No attachment available
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Edit and Delete Actions */}
+                              <td>
+                                <div
+                                  className="d-flex gap-2 justify-content-center"
+                                  style={{ textAlign: "-webkit-center" }}
                                 >
-                                  <i className="ri-edit-2-line"></i>
-                                </Link>
-                              </div>
-                              {/* Delete Button */}
-                              <div className="remove">
-                                <Link
-                                  onClick={() => handleDelete(policy)}
-                                  style={{ textDecoration: "none" }}
-                                >
-                                  <i className="ri-delete-bin-2-line"></i>
-                                </Link>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                        {/* ))
+                                  {/* Edit Button */}
+                                  <div className="edit">
+                                    {/* {console.log("Client ID:", policy.id)} */}
+                                    <Link
+                                      to={`/policy-update-form/${policy._id}`}
+                                      onClick={() => handleEdit(policy)}
+                                      style={{ textDecoration: "none" }}
+                                    >
+                                      <i className="ri-edit-2-line"></i>
+                                    </Link>
+                                  </div>
+                                  {/* Delete Button */}
+                                  <div className="remove">
+                                    <Link
+                                      onClick={() => handleDelete(policy)}
+                                      style={{ textDecoration: "none" }}
+                                    >
+                                      <i className="ri-delete-bin-2-line"></i>
+                                    </Link>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
                         ) : (
                           <tr>
                             <td colSpan="7">
@@ -871,7 +876,7 @@ export default function UpdatePolicy() {
                               </div>
                             </td>
                           </tr>
-                        )} */}
+                        )}
                       </tbody>
                     </table>
                   </div>

@@ -325,8 +325,7 @@ export default function PolicyTable({ handleMenuClick }) {
                                 className="entry_date"
                                 style={{ fontSize: ".8rem" }}
                               >
-                                {policy.entryDate &&
-                                  policy.entryDate.split("T")[0]}
+                                {policy.entryDate}
                               </td>
                               {/* Issue Date */}
                               <td

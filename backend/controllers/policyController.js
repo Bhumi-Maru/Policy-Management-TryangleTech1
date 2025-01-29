@@ -1,7 +1,7 @@
 const Policy = require("../Models/Policy");
 
-// Add Policy
-const addPolicy = async (req, res) => {
+// Add or Append Policy Data
+const addOrAppendPolicy = async (req, res) => {
   try {
     console.log("Received body:", req.body);
     console.log("Uploaded files:", req.files);
@@ -17,55 +17,88 @@ const addPolicy = async (req, res) => {
       policyAmount,
     } = req.body;
 
-    // Check if all required fields are provided
-    if (
-      !policyNumber ||
-      !clientName ||
-      !companyName ||
-      !mainCategory ||
-      !subCategory ||
-      !issueDate ||
-      !expiryDate ||
-      !policyAmount
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
+    const { id } = req.body;
+
+    let policyAttachment = [];
+    if (req.files && req.files.policyAttachment?.length > 0) {
+      policyAttachment = req.files.policyAttachment.map(
+        (file) => `/uploads/${file.filename}`
+      );
     }
 
-    // Check if 'policyAttachment' file exists
-    if (
-      !req.files ||
-      !req.files.policyAttachment ||
-      req.files.policyAttachment.length === 0
-    ) {
-      return res.status(400).json({ message: "Policy attachment is required" });
+    let policy;
+
+    if (id) {
+      // Find existing policy by ID and append new data
+      policy = await Policy.findById(id);
+
+      if (!policy) {
+        return res.status(404).json({ message: "Policy not found" });
+      }
+
+      // Append data only if it exists in the request
+      if (issueDate) {
+        Array.isArray(issueDate)
+          ? policy.issueDate.push(...issueDate)
+          : policy.issueDate.push(issueDate);
+      }
+
+      if (expiryDate) {
+        Array.isArray(expiryDate)
+          ? policy.expiryDate.push(...expiryDate)
+          : policy.expiryDate.push(expiryDate);
+      }
+
+      if (policyAmount) {
+        Array.isArray(policyAmount)
+          ? policy.policyAmount.push(...policyAmount)
+          : policy.policyAmount.push(policyAmount);
+      }
+
+      if (companyName) {
+        Array.isArray(companyName)
+          ? policy.companyName.push(...companyName)
+          : policy.companyName.push(companyName);
+      }
+
+      if (policyAttachment.length > 0) {
+        policy.policyAttachment.push(...policyAttachment);
+      }
+
+      // Save the updated policy
+      await policy.save();
+
+      return res.status(200).json({
+        message: "Policy updated with new data successfully",
+        policy,
+      });
+    } else {
+      // If no ID provided, create a new policy
+      policy = await Policy.create({
+        policyNumber,
+        clientName: clientName || null,
+        companyName: Array.isArray(companyName) ? companyName : [],
+        mainCategory: mainCategory || null,
+        subCategory: subCategory || null,
+        issueDate: Array.isArray(issueDate) ? issueDate : [issueDate],
+        expiryDate: Array.isArray(expiryDate) ? expiryDate : [expiryDate],
+        policyAmount: Array.isArray(policyAmount)
+          ? policyAmount
+          : [policyAmount],
+        policyAttachment: policyAttachment,
+      });
+
+      return res.status(201).json({
+        message: "Policy created successfully",
+        policy,
+      });
     }
-
-    // Get the policy attachment file paths (for multiple files)
-    const policyAttachment = req.files.policyAttachment.map(
-      (file) => `/uploads/${file.filename}`
-    );
-
-    // Create the policy
-    const policy = await Policy.create({
-      policyNumber,
-      clientName,
-      companyName,
-      mainCategory,
-      subCategory,
-      issueDate,
-      expiryDate,
-      policyAmount,
-      policyAttachment,
-    });
-
-    return res
-      .status(201)
-      .json({ message: "Policy added successfully", policy });
   } catch (error) {
-    console.error("Error adding policy:", error);
-    return res
-      .status(500)
-      .json({ message: "Error adding policy", error: error.message });
+    console.error("Error adding or appending policy:", error);
+    return res.status(500).json({
+      message: "Error adding or appending policy",
+      error: error.message,
+    });
   }
 };
 
@@ -161,7 +194,7 @@ const updatePolicy = async (req, res) => {
 };
 
 module.exports = {
-  addPolicy,
+  addOrAppendPolicy,
   getAllPolicies,
   getPolicyById,
   deletePolicy,
