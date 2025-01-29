@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   addPolicy,
-  // updatePolicy,
+  updatePolicy,
   getAllPolicies,
   deletePolicy,
   getPolicyById,
@@ -14,7 +14,7 @@ const policyRouter = express.Router();
 policyRouter.post("/policy", uploadFields, addPolicy);
 
 // Update policy (PUT)
-// policyRouter.put("/policy/:id", uploadFields, updatePolicy);
+policyRouter.put("/policy/:id", uploadFields, updatePolicy);
 
 // Get all policies (GET)
 policyRouter.get("/policy", getAllPolicies);

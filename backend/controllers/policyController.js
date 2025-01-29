@@ -1,114 +1,72 @@
-const mongoose = require("mongoose"); // Ensure mongoose is required
 const Policy = require("../Models/Policy");
 
-// Add Policy (either new policy or add to existing policy)
+// Add Policy
 const addPolicy = async (req, res) => {
   try {
     console.log("Received body:", req.body);
     console.log("Uploaded files:", req.files);
 
     const {
-      _id, // Check if the ID exists to add data to an existing policy
+      policyNumber,
       clientName,
       companyName,
       mainCategory,
       subCategory,
-      entryDates,
-      issueDates,
-      expiryDates,
-      policyAmounts,
+      issueDate,
+      expiryDate,
+      policyAmount,
     } = req.body;
 
-    // Handle file uploads correctly
-    const policyAttachments = req.files?.policyAttachments
-      ? req.files.policyAttachments.map((file) => `/uploads/${file.filename}`)
-      : [];
-
-    // Ensure that companyName is an array of ObjectIds
-    const companyNameArray = Array.isArray(companyName)
-      ? companyName.map((id) => new mongoose.Types.ObjectId(id)) // Using 'new' to correctly instantiate ObjectIds
-      : typeof companyName === "string"
-      ? companyName.split(",").map((id) => new mongoose.Types.ObjectId(id)) // Using 'new' for each ObjectId if it's a string
-      : [];
-
-    // Split the comma-separated strings into arrays (if they are strings)
-    const issueDatesArray = Array.isArray(issueDates)
-      ? issueDates
-      : typeof issueDates === "string" && issueDates
-      ? issueDates.split(",")
-      : [];
-    const expiryDatesArray = Array.isArray(expiryDates)
-      ? expiryDates
-      : typeof expiryDates === "string" && expiryDates
-      ? expiryDates.split(",")
-      : [];
-    const policyAmountsArray = Array.isArray(policyAmounts)
-      ? policyAmounts
-      : typeof policyAmounts === "string" && policyAmounts
-      ? policyAmounts.split(",")
-      : [];
-    const entryDatesArray = Array.isArray(entryDates)
-      ? entryDates
-      : typeof entryDates === "string" && entryDates
-      ? entryDates.split(",")
-      : [];
-
-    let policy;
-
-    // If ID is provided, add data to an existing policy
-    if (_id) {
-      const updates = {};
-
-      // Add new data to the existing arrays
-      if (entryDatesArray.length > 0)
-        updates.entryDate = { $push: { $each: entryDatesArray } };
-      if (issueDatesArray.length > 0)
-        updates.issueDate = { $push: { $each: issueDatesArray } };
-      if (expiryDatesArray.length > 0)
-        updates.expiryDate = { $push: { $each: expiryDatesArray } };
-      if (policyAmountsArray.length > 0)
-        updates.policyAmount = { $push: { $each: policyAmountsArray } };
-      if (clientName) updates.clientName = clientName;
-      if (companyNameArray.length > 0)
-        updates.companyName = { $push: { $each: companyNameArray } }; // Ensure $push with $each for array
-      if (mainCategory) updates.mainCategory = mainCategory;
-      if (subCategory) updates.subCategory = subCategory;
-      if (policyAttachments.length > 0)
-        updates.policyAttachment = { $push: { $each: policyAttachments } };
-
-      // Add data to the existing policy or create a new one
-      policy = await Policy.findByIdAndUpdate(_id, updates, {
-        new: true,
-        runValidators: true,
-        upsert: true, // This will create the policy if it doesn't exist
-      });
-
-      return res
-        .status(200)
-        .json({ message: "Policy added successfully", policy });
+    // Check if all required fields are provided
+    if (
+      !policyNumber ||
+      !clientName ||
+      !companyName ||
+      !mainCategory ||
+      !subCategory ||
+      !issueDate ||
+      !expiryDate ||
+      !policyAmount
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // If no ID is provided, create a new policy
-    policy = await Policy.create({
+    // Ensure companyName is an array of ObjectIds
+    if (!Array.isArray(companyName) || companyName.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "companyName should be an array of ObjectIds" });
+    }
+
+    // Check if 'policyAttachment' file exists
+    if (!req.files || !req.files.policyAttachment) {
+      return res.status(400).json({ message: "Policy attachment is required" });
+    }
+
+    // Get the policy attachment file path
+    const policyAttachment = `/uploads/${req.files.policyAttachment[0].filename}`;
+
+    // Create the policy
+    const policy = await Policy.create({
+      policyNumber,
       clientName,
-      companyName: companyNameArray, // This can be an array of company ObjectIds
+      companyName,
       mainCategory,
       subCategory,
-      entryDate: entryDatesArray,
-      issueDate: issueDatesArray,
-      expiryDate: expiryDatesArray,
-      policyAmount: policyAmountsArray,
-      policyAttachment: policyAttachments,
+      issueDate,
+      expiryDate,
+      policyAmount,
+      policyAttachment,
     });
 
     return res
       .status(201)
-      .json({ message: "Policy created successfully", policy });
+      .json({ message: "Policy added successfully", policy });
   } catch (error) {
-    console.error("Error processing policy:", error);
+    console.error("Error adding policy:", error);
     return res
       .status(500)
-      .json({ message: "Error processing policy", error: error.message });
+      .json({ message: "Error adding policy", error: error.message });
   }
 };
 
@@ -135,7 +93,7 @@ const getPolicyById = async (req, res) => {
     const { id } = req.params;
     const policy = await Policy.findById(id)
       .populate("clientName", "firstName lastName")
-      .populate("companyName", "companyName")
+      .populate("companyName", "companyName") 
       .populate("mainCategory", "mainCategoryName")
       .populate("subCategory", "subCategoryName");
     if (!policy) {
@@ -153,11 +111,11 @@ const getPolicyById = async (req, res) => {
 // Delete policy
 const deletePolicy = async (req, res) => {
   try {
-    const { id } = req.params; // Get policy ID from the request URL
-    const policy = await Policy.findByIdAndDelete(id); // Delete the policy by ID
+    const { id } = req.params;
+    const policy = await Policy.findByIdAndDelete(id);
 
     if (!policy) {
-      return res.status(404).json({ message: "Policy not found" }); // If no policy is found with the provided ID
+      return res.status(404).json({ message: "Policy not found" });
     }
 
     return res
@@ -171,9 +129,42 @@ const deletePolicy = async (req, res) => {
   }
 };
 
+// Update policy
+const updatePolicy = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = { ...req.body };
+
+    // Handle updated file upload if provided
+    if (req.files) {
+      if (req.files.policyAttachment) {
+        updates.policyAttachment = `/uploads/${req.files.policyAttachment[0].filename}`;
+      }
+    }
+
+    // Perform the update
+    const updatedPolicy = await Policy.findByIdAndUpdate(id, updates);
+
+    if (!updatedPolicy) {
+      return res.status(404).json({ message: "Policy not found" });
+    }
+
+    return res.status(200).json({
+      message: "Policy updated successfully",
+      updatedPolicy,
+    });
+  } catch (error) {
+    console.error("Error updating policy:", error);
+    return res
+      .status(500)
+      .json({ message: "Error updating policy", error: error.message });
+  }
+};
+
 module.exports = {
   addPolicy,
   getAllPolicies,
   getPolicyById,
   deletePolicy,
+  updatePolicy,
 };

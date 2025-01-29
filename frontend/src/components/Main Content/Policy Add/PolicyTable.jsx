@@ -329,25 +329,22 @@ export default function PolicyTable({ handleMenuClick }) {
                                 className="entry_date"
                                 style={{ fontSize: ".8rem" }}
                               >
-                                {
-                                  policy.entryDate?.[
-                                    policy.entryDate.length - 1
-                                  ]
-                                }
+                                {policy.entryDate &&
+                                  policy.entryDate.split("T")[0]}
                               </td>
                               {/* Issue Date */}
                               <td
                                 className="issue_date"
                                 style={{ fontSize: ".8rem" }}
                               >
-                                {policy.issueDate?.slice(-1)[0]}
+                                {policy.issueDate}
                               </td>
                               {/* Expiry Date */}
                               <td
                                 className="expiry_date"
                                 style={{ fontSize: ".8rem" }}
                               >
-                                {policy.expiryDate?.slice(-1)[0]}
+                                {policy.expiryDate}
                               </td>
                               {/* Edit and Delete Actions */}
                               <td>
