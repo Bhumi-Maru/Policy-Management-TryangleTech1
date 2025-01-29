@@ -1,0 +1,21 @@
+.add-btn {
+  background-color: #0ab39c;
+  border-color: #0ab39c;
+}
+
+.add-btn:hover {
+  background-color: #099885;
+  border-color: #099885;
+}
+
+.btn-soft-danger {
+  color: #f06548;
+  background-color: #fde8e4;
+  border-color: #fde8e4;
+}
+
+.btn-soft-danger:hover {
+  color: white;
+  background-color: #f06548;
+  border-color: #f06548;
+}

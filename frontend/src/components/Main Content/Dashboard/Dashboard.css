@@ -1,0 +1,21 @@
+a {
+  text-decoration: none;
+}
+
+.form-select-sm {
+  padding-top: 1px;
+  padding-bottom: 0px;
+  padding-left: 8px;
+}
+
+/* .modal {
+  --bs-modal-width: 631px;
+} */
+
+.view a {
+  color: rgb(10, 179, 156);
+}
+
+.view a:hover {
+  color: #099885;
+}

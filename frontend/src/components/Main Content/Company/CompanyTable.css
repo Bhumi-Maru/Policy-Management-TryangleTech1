@@ -1,0 +1,39 @@
+/* .card {
+  border: none;
+  box-shadow: none;
+} */
+
+.card-header {
+  border-bottom: none;
+}
+
+.gridjs-pagination .gridjs-pages button.gridjs-currentPage:hover {
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #f3f6f9;
+  border-color: #f3f6f9;
+  font-size: 13px;
+}
+
+.cancel-btn:hover {
+  background-color: #ced4da;
+  border-color: #ced4da;
+}
+
+.submit-btn {
+  background-color: #0ab39c;
+  border-color: #0ab39c;
+  font-size: 13px;
+}
+
+.submit-btn:hover {
+  background-color: #099885;
+  border-color: #099885;
+  color: white;
+}
+
+.form-control::placeholder {
+  font-size: 13px;
+}
