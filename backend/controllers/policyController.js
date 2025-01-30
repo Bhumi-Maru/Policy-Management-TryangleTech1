@@ -1,104 +1,46 @@
 const Policy = require("../Models/Policy");
+const SubPolicy = require("../Models/SubPolicy");
 
-// Add or Append Policy Data
-const addOrAppendPolicy = async (req, res) => {
+//add policy
+const addPolicy = async (req, res) => {
   try {
-    console.log("Received body:", req.body);
-    console.log("Uploaded files:", req.files);
+    const { policyNumber, clientName, mainCategory, subCategory, subPolicy } =
+      req.body;
 
-    const {
+    // Validate required fields
+    if (
+      !policyNumber ||
+      !clientName ||
+      !mainCategory ||
+      !subCategory ||
+      !subPolicy
+    ) {
+      return res
+        .status(400)
+        .json({ message: "All required fields must be provided." });
+    }
+
+    // Create a new policy instance
+    const newPolicy = new Policy({
       policyNumber,
       clientName,
-      companyName,
       mainCategory,
       subCategory,
-      issueDate,
-      expiryDate,
-      policyAmount,
-    } = req.body;
-
-    const { id } = req.body;
-
-    let policyAttachment = [];
-    if (req.files && req.files.policyAttachment?.length > 0) {
-      policyAttachment = req.files.policyAttachment.map(
-        (file) => `/uploads/${file.filename}`
-      );
-    }
-
-    let policy;
-
-    if (id) {
-      // Find existing policy by ID and append new data
-      policy = await Policy.findById(id);
-
-      if (!policy) {
-        return res.status(404).json({ message: "Policy not found" });
-      }
-
-      // Append data only if it exists in the request
-      if (issueDate) {
-        Array.isArray(issueDate)
-          ? policy.issueDate.push(...issueDate)
-          : policy.issueDate.push(issueDate);
-      }
-
-      if (expiryDate) {
-        Array.isArray(expiryDate)
-          ? policy.expiryDate.push(...expiryDate)
-          : policy.expiryDate.push(expiryDate);
-      }
-
-      if (policyAmount) {
-        Array.isArray(policyAmount)
-          ? policy.policyAmount.push(...policyAmount)
-          : policy.policyAmount.push(policyAmount);
-      }
-
-      if (companyName) {
-        Array.isArray(companyName)
-          ? policy.companyName.push(...companyName)
-          : policy.companyName.push(companyName);
-      }
-
-      if (policyAttachment.length > 0) {
-        policy.policyAttachment.push(...policyAttachment);
-      }
-
-      // Save the updated policy
-      await policy.save();
-
-      return res.status(200).json({
-        message: "Policy updated with new data successfully",
-        policy,
-      });
-    } else {
-      // If no ID provided, create a new policy
-      policy = await Policy.create({
-        policyNumber,
-        clientName: clientName || null,
-        companyName: Array.isArray(companyName) ? companyName : [],
-        mainCategory: mainCategory || null,
-        subCategory: subCategory || null,
-        issueDate: Array.isArray(issueDate) ? issueDate : [issueDate],
-        expiryDate: Array.isArray(expiryDate) ? expiryDate : [expiryDate],
-        policyAmount: Array.isArray(policyAmount)
-          ? policyAmount
-          : [policyAmount],
-        policyAttachment: policyAttachment,
-      });
-
-      return res.status(201).json({
-        message: "Policy created successfully",
-        policy,
-      });
-    }
-  } catch (error) {
-    console.error("Error adding or appending policy:", error);
-    return res.status(500).json({
-      message: "Error adding or appending policy",
-      error: error.message,
+      subPolicy,
     });
+
+    // Save the policy to the database
+    await newPolicy.save();
+
+    return res.status(201).json({
+      message: "Policy added successfully",
+      policy: newPolicy,
+    });
+  } catch (error) {
+    console.error("Error adding policy:", error);
+    return res
+      .status(500)
+      .json({ message: "Error adding policy", error: error.message });
   }
 };
 
@@ -109,7 +51,8 @@ const getAllPolicies = async (req, res) => {
       .populate("clientName", "firstName lastName")
       .populate("companyName", "companyName")
       .populate("mainCategory", "mainCategoryName")
-      .populate("subCategory", "subCategoryName");
+      .populate("subCategory", "subCategoryName")
+      .populate("subPolicy", "subPolicy");
     return res.status(200).json(policies);
   } catch (error) {
     console.error("Error fetching policies:", error);
@@ -193,10 +136,94 @@ const updatePolicy = async (req, res) => {
   }
 };
 
+/////// addSub policy ////////
+const addSubPolicy = async (req, res) => {
+  try {
+    const {
+      companyName,
+      entryDate,
+      issueDate,
+      expiryDate,
+      policyAmount,
+      policyAttachment,
+    } = req.body;
+
+    // Validate required fields
+    if (
+      !companyName ||
+      !issueDate ||
+      !expiryDate ||
+      !policyAmount ||
+      !policyAttachment
+    ) {
+      return res
+        .status(400)
+        .json({ message: "All required fields must be provided." });
+    }
+
+    // Create a new subPolicy
+    const newSubPolicy = new SubPolicy({
+      companyName,
+      entryDate,
+      issueDate,
+      expiryDate,
+      policyAmount,
+      policyAttachment,
+    });
+
+    // Save the policy to the database
+    await newSubPolicy.save();
+
+    return res.status(201).json({
+      message: "subPolicy added successfully",
+      policy: newSubPolicy,
+    });
+  } catch (error) {
+    console.error("Error adding subPolicy:", error);
+    return res
+      .status(500)
+      .json({ message: "Error adding subPolicy", error: error.message });
+  }
+};
+
+// Fetch all policies
+const getAllSubPolicies = async (req, res) => {
+  try {
+    const subPolicies = await SubPolicy.find();
+    return res.status(200).json(subPolicies);
+  } catch (error) {
+    console.error("Error fetching subPolicies:", error);
+    return res
+      .status(500)
+      .json({ message: "Error fetching subPolicies", error: error.message });
+  }
+};
+
+// Fetch a policy by ID
+const getSubPolicyById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const subPolicy = await SubPolicy.findById(id);
+
+    if (!subPolicy) {
+      return res.status(404).json({ message: "subPolicy not found" });
+    }
+    return res.status(200).json(subPolicy);
+  } catch (error) {
+    console.error("Error fetching subPolicy by ID:", error);
+    return res
+      .status(500)
+      .json({ message: "Error fetching subPolicy", error: error.message });
+  }
+};
+
 module.exports = {
-  addOrAppendPolicy,
+  addPolicy,
   getAllPolicies,
   getPolicyById,
   deletePolicy,
   updatePolicy,
+  addSubPolicy,
+  getAllSubPolicies,
+  getSubPolicyById,
 };
