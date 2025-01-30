@@ -20,6 +20,14 @@ const addPolicy = async (req, res) => {
         .json({ message: "All required fields must be provided." });
     }
 
+    // Ensure the referenced SubPolicy exists
+    const existingSubPolicy = await SubPolicy.findById(subPolicy);
+    if (!existingSubPolicy) {
+      return res.status(404).json({
+        message: "SubPolicy not found. Please provide a valid SubPolicy ID.",
+      });
+    }
+
     // Create a new policy instance
     const newPolicy = new Policy({
       policyNumber,
@@ -49,10 +57,13 @@ const getAllPolicies = async (req, res) => {
   try {
     const policies = await Policy.find()
       .populate("clientName", "firstName lastName")
-      .populate("companyName", "companyName")
       .populate("mainCategory", "mainCategoryName")
       .populate("subCategory", "subCategoryName")
-      .populate("subPolicy", "subPolicy");
+      .populate(
+        "subPolicy",
+        "companyName entryDate issueDate expiryDate policyAmount policyAttachment"
+      );
+
     return res.status(200).json(policies);
   } catch (error) {
     console.error("Error fetching policies:", error);
@@ -68,9 +79,12 @@ const getPolicyById = async (req, res) => {
     const { id } = req.params;
     const policy = await Policy.findById(id)
       .populate("clientName", "firstName lastName")
-      .populate("companyName", "companyName")
       .populate("mainCategory", "mainCategoryName")
-      .populate("subCategory", "subCategoryName");
+      .populate("subCategory", "subCategoryName")
+      .populate(
+        "subPolicy",
+        "companyName entryDate issueDate expiryDate policyAmount policyAttachment"
+      );
     if (!policy) {
       return res.status(404).json({ message: "Policy not found" });
     }

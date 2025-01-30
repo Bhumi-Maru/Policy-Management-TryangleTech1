@@ -13,6 +13,6 @@ const subPolicySchema = new mongoose.Schema({
   policyAttachment: { type: String, required: true },
 });
 
-const SubPolicy = mongoose.model("Sub Policy", subPolicySchema);
+const SubPolicy = mongoose.model("SubPolicy", subPolicySchema);
 
 module.exports = SubPolicy;

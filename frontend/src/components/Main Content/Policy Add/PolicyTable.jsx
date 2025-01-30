@@ -6,36 +6,49 @@ export default function PolicyTable({ handleMenuClick }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [policy, setPolicy] = useState([]);
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [company, setCompany] = useState([]);
 
-  // Fetch client data from API
+  // Fetch policy and company data from API
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/policy");
-        const data = await response.json();
-        setPolicy(data);
+        // Fetch policy data
+        const policyRes = await fetch("http://localhost:8000/api/policy");
+        const policyData = await policyRes.json();
+        setPolicy(policyData);
+
+        // Fetch company data
+        const companyRes = await fetch("http://localhost:8000/api/company");
+        const companyData = await companyRes.json();
+        setCompany(companyData);
       } catch (error) {
-        console.error("Error fetching policy data:", error);
+        console.error("Error fetching data:", error);
       }
     };
     fetchData();
   }, []);
 
-  // Filter clients based on search query
-  const filteredData = policy.filter((client) => {
+  // Helper function to get company name by ID
+  const getCompanyNameById = (companyId) => {
+    const companyObj = company.find((comp) => comp._id === companyId);
+    return companyObj ? companyObj.companyName : "Unknown Company";
+  };
+
+  // Filter policies based on search query
+  const filteredData = policy.filter((policy) => {
     const query = searchQuery.toLowerCase();
-    // Extract firstName and lastName from client.clientName
     const clientName =
-      (client.clientName?.firstName || "") +
+      (policy.clientName?.firstName || "") +
       " " +
-      (client.clientName?.lastName || "");
+      (policy.clientName?.lastName || "");
     return (
       clientName.toLowerCase().includes(query) ||
-      client.companyName?.companyName?.toLowerCase().includes(query) ||
-      client.subCategory?.subCategoryName?.toLowerCase().includes(query) ||
-      client.expiryDate?.toLowerCase().includes(query) ||
-      client.policyAmount?.toLowerCase().includes(query)
+      getCompanyNameById(policy.subPolicy.companyName)
+        .toLowerCase()
+        .includes(query) ||
+      policy.subCategory?.subCategoryName?.toLowerCase().includes(query) ||
+      policy.subPolicy.expiryDate?.toLowerCase().includes(query) ||
+      policy.subPolicy.policyAmount?.toLowerCase().includes(query)
     );
   });
 
@@ -53,60 +66,40 @@ export default function PolicyTable({ handleMenuClick }) {
     }
   };
 
-  // Handle deleting a client
-  const handleDelete = (policyToDelete) => {
+  // Handle deleting a policy
+  const handleDelete = async (policyToDelete) => {
     if (!policyToDelete?._id) {
-      console.error("policy ID is missing or invalid:", policyToDelete);
-      showDeleteToast("Failed to delete policy: Invalid policy data.");
+      console.error("Policy ID is missing or invalid:", policyToDelete);
       return;
     }
-    console.log("Attempting to delete policy with ID:", policyToDelete._id);
-    const modal = new bootstrap.Modal(
-      document.getElementById("deleteRecordModal")
-    );
-    modal.show();
-    const deleteButton = document.getElementById("delete-record");
-    const closeButton = document.getElementById("btn-close");
-    const cleanupListeners = () => {
-      deleteButton.removeEventListener("click", confirmDeletion);
-      closeButton.removeEventListener("click", cancelDeletion);
-    };
-    const confirmDeletion = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:8000/api/policy/${policyToDelete._id}`,
-          {
-            method: "DELETE",
-          }
-        );
-        if (response.ok) {
-          setPolicy((prevPolicies) =>
-            prevPolicies.filter((policy) => policy._id !== policyToDelete._id)
-          );
-          modal.hide();
-          showDeleteToast("Record deleted successfully!");
-        } else {
-          const errorData = await response.json();
-          console.error("Delete Error Response:", errorData);
-          showDeleteToast(
-            `Failed to delete client: ${errorData.message || "Unknown error"}`
-          );
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/policy/${policyToDelete._id}`,
+        {
+          method: "DELETE",
         }
-      } catch (error) {
-        console.error("Error deleting client:", error);
-        showDeleteToast("An error occurred while deleting the client.");
-      } finally {
-        cleanupListeners();
+      );
+
+      if (response.ok) {
+        setPolicy((prevPolicies) =>
+          prevPolicies.filter((policy) => policy._id !== policyToDelete._id)
+        );
+        showDeleteToast("Policy deleted successfully!");
+      } else {
+        const errorData = await response.json();
+        console.error("Delete Error Response:", errorData);
+        showDeleteToast(
+          `Failed to delete policy: ${errorData.message || "Unknown error"}`
+        );
       }
-    };
-    const cancelDeletion = () => {
-      modal.hide();
-      cleanupListeners();
-    };
-    deleteButton.addEventListener("click", confirmDeletion);
-    closeButton.addEventListener("click", cancelDeletion);
+    } catch (error) {
+      console.error("Error deleting policy:", error);
+      showDeleteToast("An error occurred while deleting the policy.");
+    }
   };
 
+  // Show delete toast message
   const showDeleteToast = (message) => {
     const toastHTML = `
       <div class="toast fade show position-fixed top-0 end-0 m-3" role="alert" style="z-index: 1055; background-color: white">
@@ -145,6 +138,7 @@ export default function PolicyTable({ handleMenuClick }) {
       toastElement.remove();
     }, 3000);
   };
+
   // Initialize tooltips for table rows
   useEffect(() => {
     const tooltipTriggerList = Array.from(
@@ -157,7 +151,7 @@ export default function PolicyTable({ handleMenuClick }) {
 
   return (
     <>
-      {/* table 1 */}
+      {/* Table */}
       <div className="container-fluid">
         <div className="row">
           <div className="col-lg-12">
@@ -202,78 +196,31 @@ export default function PolicyTable({ handleMenuClick }) {
                     >
                       <thead className="table-light">
                         <tr>
-                          {/* serial number */}
-                          <th
-                            className="srno_sort"
-                            data-sort="serial number"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             SR No.
                           </th>
-                          {/* policy number */}
-                          <th
-                            className="policy_sort"
-                            data-sort="policy number"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Policy No.
                           </th>
-                          {/* client name */}
-                          <th
-                            className="name_sort"
-                            data-sort="customer_name"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Client Name
                           </th>
-                          {/* company name */}
-                          <th
-                            className="companyPolicy_sort"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Company Name
                           </th>
-                          {/* subCategory name */}
-                          <th
-                            className="subCategory_sort"
-                            data-sort="phone"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Sub Category
                           </th>
-                          {/* Entry Date */}
-                          <th
-                            className="entryDate_sort"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Entry Date
                           </th>
-                          {/* Issue Date */}
-                          <th
-                            className="issueDate_sort"
-                            data-sort="address"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Issue Date
                           </th>
-                          {/* Expiry Date */}
-                          <th
-                            className="expiryDate_sort"
-                            data-sort="address"
-                            style={{ fontSize: ".8rem", fontWeight: "bold" }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Expiry Date
                           </th>
-                          {/* action */}
-                          <th
-                            className="action_sort"
-                            data-sort="action"
-                            style={{
-                              textAlign: "-webkit-center",
-                              fontSize: ".8rem",
-                              fontWeight: "bold",
-                            }}
-                          >
+                          <th style={{ fontSize: ".8rem", fontWeight: "bold" }}>
                             Action
                           </th>
                         </tr>
@@ -282,72 +229,35 @@ export default function PolicyTable({ handleMenuClick }) {
                         {currentData.length > 0 ? (
                           currentData.map((policy, index) => (
                             <tr key={index}>
-                              {/* Serial Number */}
-                              <td
-                                className="serial number"
-                                data-sort="serial number"
-                                style={{ fontSize: ".8rem" }}
-                              >
+                              <td style={{ fontSize: ".8rem" }}>
                                 {(currentPage - 1) * rowsPerPage + index + 1}
                               </td>
-                              {/* Policy Number */}
-                              <td
-                                className="policy number"
-                                data-sort="policy number"
-                                style={{ fontSize: ".8rem" }}
-                              >
+                              <td style={{ fontSize: ".8rem" }}>
                                 {policy.policyNumber}
                               </td>
-                              {/* Customer Name */}
-                              <td
-                                className="client_name"
-                                style={{ fontSize: ".8rem" }}
-                              >
+                              <td style={{ fontSize: ".8rem" }}>
                                 {policy.clientName?.firstName}{" "}
                                 {policy.clientName?.lastName}
                               </td>
-                              {/* company Name */}
-                              <td
-                                className="company_name"
-                                style={{ fontSize: ".8rem" }}
-                              >
-                                {policy.companyName?.companyName}
+                              <td style={{ fontSize: ".8rem" }}>
+                                {getCompanyNameById(
+                                  policy.subPolicy.companyName
+                                )}
                               </td>
-                              {/* Sub Category */}
-                              <td
-                                className="sub_category"
-                                style={{ fontSize: ".8rem" }}
-                              >
+                              <td style={{ fontSize: ".8rem" }}>
                                 {policy.subCategory?.subCategoryName}
                               </td>
-                              {/* Entry Date */}
-                              <td
-                                className="entry_date"
-                                style={{ fontSize: ".8rem" }}
-                              >
-                                {policy.entryDate}
+                              <td style={{ fontSize: ".8rem" }}>
+                                {policy.subPolicy.entryDate.split("T")[0]}
                               </td>
-                              {/* Issue Date */}
-                              <td
-                                className="issue_date"
-                                style={{ fontSize: ".8rem" }}
-                              >
-                                {policy.issueDate}
+                              <td style={{ fontSize: ".8rem" }}>
+                                {policy.subPolicy.issueDate.split("T")[0]}
                               </td>
-                              {/* Expiry Date */}
-                              <td
-                                className="expiry_date"
-                                style={{ fontSize: ".8rem" }}
-                              >
-                                {policy.expiryDate}
+                              <td style={{ fontSize: ".8rem" }}>
+                                {policy.subPolicy.expiryDate.split("T")[0]}
                               </td>
-                              {/* Edit and Delete Actions */}
                               <td>
-                                <div
-                                  className="d-flex gap-2 justify-content-center"
-                                  style={{ textAlign: "-webkit-center" }}
-                                >
-                                  {/* information icon */}
+                                <div className="d-flex gap-2 justify-content-center">
                                   <div className="information">
                                     <i
                                       className="ri-information-fill"
@@ -361,7 +271,6 @@ export default function PolicyTable({ handleMenuClick }) {
                                       data-bs-title="user"
                                     ></i>
                                   </div>
-                                  {/* Edit Button */}
                                   <div className="edit">
                                     <Link
                                       to={`/policy-update-form/${policy._id}`}
@@ -373,7 +282,6 @@ export default function PolicyTable({ handleMenuClick }) {
                                       <i className="ri-edit-2-line"></i>
                                     </Link>
                                   </div>
-                                  {/* Delete Button */}
                                   <div className="remove">
                                     <Link
                                       onClick={() => handleDelete(policy)}
@@ -424,6 +332,7 @@ export default function PolicyTable({ handleMenuClick }) {
                       </tbody>
                     </table>
                   </div>
+                  {/* Pagination */}
                   <div className="gridjs-footer" style={{ boxShadow: "none" }}>
                     {filteredData.length > 0 && (
                       <div className="gridjs-pagination">
@@ -436,11 +345,7 @@ export default function PolicyTable({ handleMenuClick }) {
                           Showing <b>{(currentPage - 1) * rowsPerPage + 1}</b>{" "}
                           to{" "}
                           <b>
-                            {" "}
-                            {Math.min(
-                              currentPage * rowsPerPage,
-                              policy.length
-                            )}{" "}
+                            {Math.min(currentPage * rowsPerPage, policy.length)}
                           </b>{" "}
                           of <b>{filteredData.length}</b> results
                         </div>
@@ -494,58 +399,6 @@ export default function PolicyTable({ handleMenuClick }) {
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div
-        className="modal fade zoomIn"
-        id="deleteRecordModal"
-        tabIndex="-1"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-header" style={{ borderBottom: "none" }}>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-                id="btn-close"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <div class="mt-2 text-center">
-                <lord-icon
-                  src="https://cdn.lordicon.com/gsqxdxog.json"
-                  trigger="loop"
-                  colors="primary:#f7b84b,secondary:#f06548"
-                  style={{ width: "100px", height: "100px" }}
-                ></lord-icon>
-                <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
-                  <h4>Are you Sure?</h4>
-                  <p class="text-muted mx-4 mb-0">
-                    Are you sure you want to remove this record?
-                  </p>
-                </div>
-              </div>
-              <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
-                <button
-                  type="button"
-                  class="btn w-sm btn-light close-btn"
-                  data-bs-dismiss="modal"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  class="btn w-sm btn-danger remove"
-                  id="delete-record"
-                >
-                  Yes, Delete It!
-                </button>
               </div>
             </div>
           </div>

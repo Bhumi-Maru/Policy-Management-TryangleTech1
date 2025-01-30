@@ -51,7 +51,7 @@ export default function UpdatePolicy() {
         policyAmount: policyData.policyAmount || "",
         policyAttachment: policyData.policyAttachment || null,
       });
-
+      console.log("policy Data", policyData);
       // Fetch clients, categories, etc.
       const clientsRes = await fetch("http://localhost:8000/api/clients");
       const clientsData = await clientsRes.json();
@@ -317,6 +317,12 @@ export default function UpdatePolicy() {
     closeButton.addEventListener("click", cancelDeletion);
   };
 
+  // Helper function to get company name by ID
+  const getCompanyNameById = (companyId) => {
+    const companyObj = companies.find((comp) => comp._id === companyId);
+    return companyObj ? companyObj.companyName : "Unknown Company";
+  };
+
   // Initialize tooltips for table rows
   useEffect(() => {
     const tooltipTriggerList = Array.from(
@@ -505,7 +511,7 @@ export default function UpdatePolicy() {
                             type="date"
                             name="issueDate"
                             className="form-control"
-                            value={formData.issueDate}
+                            value={formData?.issueDate}
                             onChange={handleInputChange}
                           />
                           {errors.issueDate && (
@@ -754,14 +760,14 @@ export default function UpdatePolicy() {
                             className="issue_date"
                             style={{ fontSize: ".8rem" }}
                           >
-                            {policy.companyName?.companyName}
+                            {getCompanyNameById(policy.subPolicy?.companyName)}
                           </td>
                           {/* Issue Date */}
                           <td
                             className="issue_date"
                             style={{ fontSize: ".8rem" }}
                           >
-                            {policy.issueDate}
+                            {policy.subPolicy?.issueDate.split("T")[0]}
                           </td>
 
                           {/* Expiry Date */}
@@ -769,29 +775,24 @@ export default function UpdatePolicy() {
                             className="expiry_date"
                             style={{ fontSize: ".8rem" }}
                           >
-                            {policy.expiryDate}
+                            {policy.subPolicy?.expiryDate.split("T")[0]}
                           </td>
                           <td
                             className="policy_amount"
                             style={{ fontSize: ".8rem" }}
                           >
-                            &nbsp; &nbsp; &nbsp; {policy.policyAmount}
+                            &nbsp; &nbsp; &nbsp;
+                            {policy.subPolicy?.policyAmount}
                           </td>
                           {/* Policy Attachment Link */}
                           <td
-                            data-column-id="other documents"
-                            style={{ textAlign: "center" }}
+                            style={{ fontSize: ".8rem", textAlign: "center" }}
                           >
-                            {policy.policyAttachment ? (
+                            {policy.subPolicy?.policyAttachment ? (
                               <a
-                                href={`http://localhost:8000${policy.policyAttachment}`}
+                                href={`http://localhost:8000${policy.subPolicy?.policyAttachment}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{ textDecoration: "none" }}
-                                data-bs-toggle="tooltip"
-                                data-bs-placement="top"
-                                title={policy.policyAttachment}
-                                data-bs-title={policy.policyAttachment}
                               >
                                 <i
                                   className="ri-pushpin-fill"
@@ -800,12 +801,15 @@ export default function UpdatePolicy() {
                                     cursor: "pointer",
                                     fontSize: "15px",
                                   }}
+                                  data-bs-toggle="tooltip"
+                                  data-bs-placement="top"
+                                  data-bs-title={
+                                    policy.subPolicy?.policyAttachment
+                                  }
                                 ></i>
                               </a>
                             ) : (
-                              <span style={{ color: "red" }}>
-                                No attachment available
-                              </span>
+                              "No Attachment"
                             )}
                           </td>
 
