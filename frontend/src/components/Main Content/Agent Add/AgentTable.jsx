@@ -522,6 +522,7 @@ export default function AgentTable({ handleMenuClick }) {
           </div>
         </div>
 
+        {/* delete modal */}
         <div
           className="modal fade zoomIn"
           id="deleteRecordModal"

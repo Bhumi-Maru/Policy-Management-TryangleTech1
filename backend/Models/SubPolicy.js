@@ -10,9 +10,8 @@ const subPolicySchema = new mongoose.Schema({
   issueDate: { type: Date, required: true },
   expiryDate: { type: Date, required: true },
   policyAmount: { type: String, required: true },
-  policyAttachment: { type: String, required: true },
+  policyAttachment: { type: String, default: null },
 });
 
 const SubPolicy = mongoose.model("SubPolicy", subPolicySchema);
-
 module.exports = SubPolicy;

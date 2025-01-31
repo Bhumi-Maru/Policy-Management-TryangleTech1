@@ -8,6 +8,7 @@ const {
   addSubPolicy,
   getAllSubPolicies,
   getSubPolicyById,
+  deleteSubPolicy,
 } = require("../controllers/policyController");
 const { uploadFields } = require("../middleware/uploadMiddleware");
 
@@ -37,5 +38,8 @@ policyRouter.get("/sub-policy", getAllSubPolicies);
 
 // Get subPolicy by ID (GET)
 policyRouter.get("/sub-policy/:id", getSubPolicyById);
+
+// Delete policy (DELETE)
+policyRouter.delete("/sub-policy/:id", deleteSubPolicy);
 
 module.exports = policyRouter;

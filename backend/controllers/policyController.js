@@ -4,46 +4,59 @@ const SubPolicy = require("../Models/SubPolicy");
 //add policy
 const addPolicy = async (req, res) => {
   try {
-    const { policyNumber, clientName, mainCategory, subCategory, subPolicy } =
-      req.body;
+    const {
+      policyNumber,
+      clientName,
+      mainCategory,
+      subCategory,
+      companyName,
+      issueDate,
+      expiryDate,
+      policyAmount,
+    } = req.body;
 
-    // Validate required fields
     if (
       !policyNumber ||
       !clientName ||
       !mainCategory ||
       !subCategory ||
-      !subPolicy
+      !companyName ||
+      !issueDate ||
+      !expiryDate ||
+      !policyAmount
     ) {
       return res
         .status(400)
         .json({ message: "All required fields must be provided." });
     }
 
-    // Ensure the referenced SubPolicy exists
-    const existingSubPolicy = await SubPolicy.findById(subPolicy);
-    if (!existingSubPolicy) {
-      return res.status(404).json({
-        message: "SubPolicy not found. Please provide a valid SubPolicy ID.",
-      });
-    }
+    const policyAttachmentPath = req.files?.policyAttachment
+      ? `/uploads/${req.files.policyAttachment[0].filename}`
+      : null;
 
-    // Create a new policy instance
+    const newSubPolicy = new SubPolicy({
+      companyName,
+      issueDate,
+      expiryDate,
+      policyAmount,
+      policyAttachment: policyAttachmentPath,
+    });
+
+    await newSubPolicy.save();
+
     const newPolicy = new Policy({
       policyNumber,
       clientName,
       mainCategory,
       subCategory,
-      subPolicy,
+      subPolicy: newSubPolicy._id,
     });
 
-    // Save the policy to the database
     await newPolicy.save();
 
-    return res.status(201).json({
-      message: "Policy added successfully",
-      policy: newPolicy,
-    });
+    return res
+      .status(201)
+      .json({ message: "Policy added successfully", policy: newPolicy });
   } catch (error) {
     console.error("Error adding policy:", error);
     return res
@@ -231,6 +244,27 @@ const getSubPolicyById = async (req, res) => {
   }
 };
 
+// Delete policy
+const deleteSubPolicy = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const subPolicy = await SubPolicy.findByIdAndDelete(id);
+
+    if (!subPolicy) {
+      return res.status(404).json({ message: "Sub-Policy not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Sub-Policy deleted successfully", subPolicy });
+  } catch (error) {
+    console.error("Error deleting sub-policy:", error);
+    return res
+      .status(500)
+      .json({ message: "Error deleting sub-policy", error: error.message });
+  }
+};
+
 module.exports = {
   addPolicy,
   getAllPolicies,
@@ -240,4 +274,5 @@ module.exports = {
   addSubPolicy,
   getAllSubPolicies,
   getSubPolicyById,
+  deleteSubPolicy,
 };

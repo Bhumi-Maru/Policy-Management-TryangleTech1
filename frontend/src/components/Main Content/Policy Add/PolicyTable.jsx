@@ -67,36 +67,52 @@ export default function PolicyTable({ handleMenuClick }) {
   };
 
   // Handle deleting a policy
-  const handleDelete = async (policyToDelete) => {
-    if (!policyToDelete?._id) {
-      console.error("Policy ID is missing or invalid:", policyToDelete);
-      return;
-    }
 
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/policy/${policyToDelete._id}`,
-        {
-          method: "DELETE",
+  const handleDelete = (policyToDelete) => {
+    const modal = new bootstrap.Modal(
+      document.getElementById("deleteRecordModal")
+    );
+    modal.show();
+
+    const deleteButton = document.getElementById("delete-record");
+    const closeButton = document.getElementById("btn-close");
+
+    const cleanupListeners = () => {
+      deleteButton.removeEventListener("click", confirmDeletion);
+      closeButton.removeEventListener("click", cancelDeletion);
+    };
+
+    const confirmDeletion = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/policy/${policyToDelete._id}`,
+          { method: "DELETE" }
+        );
+        if (response.ok) {
+          setPolicy((prevPolicies) =>
+            prevPolicies.filter((policy) => policy._id !== policyToDelete._id)
+          );
+          modal.hide();
+          showDeleteToast("Record deleted successfully!");
+        } else {
+          const errorData = await response.json();
+          showDeleteToast(`Failed to delete policy: ${errorData.message}`);
         }
-      );
-
-      if (response.ok) {
-        setPolicy((prevPolicies) =>
-          prevPolicies.filter((policy) => policy._id !== policyToDelete._id)
-        );
-        showDeleteToast("Policy deleted successfully!");
-      } else {
-        const errorData = await response.json();
-        console.error("Delete Error Response:", errorData);
-        showDeleteToast(
-          `Failed to delete policy: ${errorData.message || "Unknown error"}`
-        );
+      } catch (error) {
+        console.error("Error deleting policy:", error);
+        showDeleteToast("An error occurred while deleting the policy.");
+      } finally {
+        cleanupListeners();
       }
-    } catch (error) {
-      console.error("Error deleting policy:", error);
-      showDeleteToast("An error occurred while deleting the policy.");
-    }
+    };
+
+    const cancelDeletion = () => {
+      modal.hide();
+      cleanupListeners();
+    };
+
+    deleteButton.addEventListener("click", confirmDeletion);
+    closeButton.addEventListener("click", cancelDeletion);
   };
 
   // Show delete toast message
@@ -241,20 +257,20 @@ export default function PolicyTable({ handleMenuClick }) {
                               </td>
                               <td style={{ fontSize: ".8rem" }}>
                                 {getCompanyNameById(
-                                  policy.subPolicy.companyName
+                                  policy.subPolicy[0].companyName
                                 )}
                               </td>
                               <td style={{ fontSize: ".8rem" }}>
                                 {policy.subCategory?.subCategoryName}
                               </td>
                               <td style={{ fontSize: ".8rem" }}>
-                                {policy.subPolicy.entryDate.split("T")[0]}
+                                {policy.subPolicy[0].entryDate.split("T")[0]}
                               </td>
                               <td style={{ fontSize: ".8rem" }}>
-                                {policy.subPolicy.issueDate.split("T")[0]}
+                                {policy.subPolicy[0].issueDate.split("T")[0]}
                               </td>
                               <td style={{ fontSize: ".8rem" }}>
-                                {policy.subPolicy.expiryDate.split("T")[0]}
+                                {policy.subPolicy[0].expiryDate.split("T")[0]}
                               </td>
                               <td>
                                 <div className="d-flex gap-2 justify-content-center">
@@ -398,6 +414,60 @@ export default function PolicyTable({ handleMenuClick }) {
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* delete modal */}
+        <div
+          className="modal fade zoomIn"
+          id="deleteRecordModal"
+          tabindex="-1"
+          aria-hidden="true"
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header" style={{ borderBottom: "none" }}>
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                  id="btn-close"
+                ></button>
+              </div>
+              <div class="modal-body">
+                <div class="mt-2 text-center">
+                  <lord-icon
+                    src="https://cdn.lordicon.com/gsqxdxog.json"
+                    trigger="loop"
+                    colors="primary:#f7b84b,secondary:#f06548"
+                    style={{ width: "100px", height: "100px" }}
+                  ></lord-icon>
+                  <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
+                    <h4>Are you Sure?</h4>
+                    <p class="text-muted mx-4 mb-0">
+                      Are you sure you want to remove this record?
+                    </p>
+                  </div>
+                </div>
+                <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
+                  <button
+                    type="button"
+                    class="btn w-sm btn-light close-btn"
+                    data-bs-dismiss="modal"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    class="btn w-sm btn-danger remove"
+                    id="delete-record"
+                  >
+                    Yes, Delete It!
+                  </button>
                 </div>
               </div>
             </div>

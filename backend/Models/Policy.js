@@ -19,11 +19,13 @@ const policySchema = new mongoose.Schema(
       ref: "SubCategory",
       required: true,
     },
-    subPolicy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "SubPolicy",
-      required: true,
-    },
+    subPolicy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "SubPolicy",
+        required: true,
+      },
+    ],
   },
   { timestamps: true }
 );
