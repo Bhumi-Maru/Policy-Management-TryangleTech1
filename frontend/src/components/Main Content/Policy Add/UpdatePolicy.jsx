@@ -223,7 +223,7 @@ export default function UpdatePolicy() {
   // Form 2: Handle submit for sub-policy data
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    console.log("Submitting form with data:", formData);
     const formDataPayload = new FormData();
     formDataPayload.append("companyName", formData.companyName);
     formDataPayload.append("issueDate", formData.issueDate);
