@@ -22,31 +22,23 @@ export default function PolicyForm() {
   const [companies, setCompanies] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  // const [subPolicies, setSubPolicies] = useState([]);
 
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [
-          clientRes,
-          companyRes,
-          mainCategoryRes,
-          subCategoryRes,
-          // subPolicyRes,
-        ] = await Promise.all([
-          fetch("http://localhost:8000/api/clients"),
-          fetch("http://localhost:8000/api/company"),
-          fetch("http://localhost:8000/api/mainCategory"),
-          fetch("http://localhost:8000/api/subCategory"),
-          // fetch("http://localhost:8000/api/sub-policy"),
-        ]);
+        const [clientRes, companyRes, mainCategoryRes, subCategoryRes] =
+          await Promise.all([
+            fetch("http://localhost:8000/api/clients"),
+            fetch("http://localhost:8000/api/company"),
+            fetch("http://localhost:8000/api/mainCategory"),
+            fetch("http://localhost:8000/api/subCategory"),
+          ]);
 
         if (
           !clientRes.ok ||
           !companyRes.ok ||
           !mainCategoryRes.ok ||
           !subCategoryRes.ok
-          // !subPolicyRes.ok
         ) {
           throw new Error("Failed to fetch data");
         }
@@ -55,7 +47,6 @@ export default function PolicyForm() {
         setCompanies(await companyRes.json());
         setMainCategories(await mainCategoryRes.json());
         setSubCategories(await subCategoryRes.json());
-        // setSubPolicies(await subPolicyRes.json());
       } catch (err) {
         setError(err.message);
       }
@@ -74,7 +65,6 @@ export default function PolicyForm() {
       newErrors.mainCategory = "Main Category is required";
     if (!formData.subCategory)
       newErrors.subCategory = "Sub Category is required";
-    // if (!formData.subPolicy) newErrors.subPolicy = "Sub Policy is required";
     if (!formData.issueDate) newErrors.issueDate = "Issue Date is required";
     if (!formData.expiryDate) newErrors.expiryDate = "Expiry Date is required";
     if (
@@ -222,23 +212,6 @@ export default function PolicyForm() {
                     <small className="text-danger">{errors.subCategory}</small>
                   )}
                 </div>
-
-                {/* <div className="col-md-4">
-                  <label>Sub Policy</label>
-                  <Select
-                    options={subPolicies.map((subPolicy) => ({
-                      value: subPolicy._id,
-                      label: subPolicy.companyName,
-                    }))}
-                    onChange={(option) =>
-                      handleSelectChange("subPolicy", option)
-                    }
-                    placeholder="Select a sub policy"
-                  />
-                  {errors.subPolicy && (
-                    <small className="text-danger">{errors.subPolicy}</small>
-                  )}
-                </div> */}
 
                 <div className="col-md-4">
                   <label>Issue Date</label>
