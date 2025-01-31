@@ -30,53 +30,106 @@ export default function UpdatePolicy() {
 
   // Fetch initial data
   useEffect(() => {
-    fetchOptions();
+    const fetchData = async () => {
+      try {
+        const [
+          policyRes,
+          clientsRes,
+          companiesRes,
+          maincategoriesRes,
+          subcategoriesRes,
+        ] = await Promise.all([
+          fetch(`http://localhost:8000/api/policy/${id}`),
+          fetch("http://localhost:8000/api/clients"),
+          fetch("http://localhost:8000/api/company"),
+          fetch("http://localhost:8000/api/mainCategory"),
+          fetch("http://localhost:8000/api/subCategory"),
+        ]);
+
+        const [
+          policyData,
+          clientsData,
+          companiesData,
+          maincategoriesData,
+          subcategoriesData,
+        ] = await Promise.all([
+          policyRes.json(),
+          clientsRes.json(),
+          companiesRes.json(),
+          maincategoriesRes.json(),
+          subcategoriesRes.json(),
+        ]);
+
+        setPolicy(policyData);
+        setFormData({
+          clientName: policyData.clientName?._id || "",
+          companyName: policyData.companyName?._id || "",
+          mainCategory: policyData.mainCategory?._id || "",
+          subCategory: policyData.subCategory?._id || "",
+          issueDate: policyData.issueDate || "",
+          expiryDate: policyData.expiryDate || "",
+          policyAmount: policyData.policyAmount || "",
+          policyAttachment: policyData.policyAttachment || null,
+        });
+
+        setClients(clientsData);
+        setCompanies(companiesData);
+        setMainCategories(maincategoriesData);
+        setSubCategories(subcategoriesData);
+      } catch (err) {
+        setError(err.message);
+      }
+    };
+
+    fetchData();
   }, [selectedPolicy]);
 
-  const fetchOptions = async () => {
-    try {
-      const policyRes = await fetch(`http://localhost:8000/api/policy/${id}`);
-      if (!policyRes.ok) {
-        throw new Error("Failed to fetch policy");
-      }
-      const policyData = await policyRes.json();
-      setPolicy(policyData);
-      setFormData({
-        clientName: policyData.clientName?._id || "",
-        companyName: policyData.companyName?._id || "",
-        mainCategory: policyData.mainCategory?._id || "",
-        subCategory: policyData.subCategory?._id || "",
-        issueDate: policyData.issueDate || "",
-        expiryDate: policyData.expiryDate || "",
-        policyAmount: policyData.policyAmount || "",
-        policyAttachment: policyData.policyAttachment || null,
-      });
-      console.log("policy Data", policyData);
-      // Fetch clients, categories, etc.
-      const clientsRes = await fetch("http://localhost:8000/api/clients");
-      const clientsData = await clientsRes.json();
-      setClients(clientsData);
+  // const fetchOptions = async () => {
+  //   try {
+  //     const policyRes = await fetch(`http://localhost:8000/api/policy/${id}`);
+  //     if (!policyRes.ok) {
+  //       throw new Error("Failed to fetch policy");
+  //     }
+  //     const policyData = await policyRes.json();
+  //     setPolicy(policyData);
+  //     setFormData({
+  //       clientName: policyData.clientName?._id || "",
+  //       companyName: policyData.companyName?._id || "",
+  //       mainCategory: policyData.mainCategory?._id || "",
+  //       subCategory: policyData.subCategory?._id || "",
+  //       issueDate: policyData.issueDate || "",
+  //       expiryDate: policyData.expiryDate || "",
+  //       policyAmount: policyData.policyAmount || "",
+  //       policyAttachment: policyData.policyAttachment || null,
+  //     });
+  //     console.log("policy Data", policyData);
+  //     // Fetch clients, categories, etc.
+  //     const clientsRes = await fetch("http://localhost:8000/api/clients");
+  //     const clientsData = await clientsRes.json();
+  //     setClients(clientsData);
 
-      const companiesRes = await fetch("http://localhost:8000/api/company");
-      const companiesData = await companiesRes.json();
-      setCompanies(companiesData);
+  //     const companiesRes = await fetch("http://localhost:8000/api/company");
+  //     const companiesData = await companiesRes.json();
+  //     setCompanies(companiesData);
 
-      const maincategoriesRes = await fetch(
-        "http://localhost:8000/api/mainCategory"
-      );
-      const maincategoriesData = await maincategoriesRes.json();
-      setMainCategories(maincategoriesData);
-      console.log("maincategoriesData", maincategoriesData);
+  //     console.log("Fetched companies:", companiesData);
 
-      const subcategoriesRes = await fetch(
-        "http://localhost:8000/api/subCategory"
-      );
-      const subcategoriesData = await subcategoriesRes.json();
-      setSubCategories(subcategoriesData);
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  //     const maincategoriesRes = await fetch(
+  //       "http://localhost:8000/api/mainCategory"
+  //     );
+  //     const maincategoriesData = await maincategoriesRes.json();
+  //     setMainCategories(maincategoriesData);
+  //     console.log("maincategoriesData", maincategoriesData);
+
+  //     const subcategoriesRes = await fetch(
+  //       "http://localhost:8000/api/subCategory"
+  //     );
+  //     const subcategoriesData = await subcategoriesRes.json();
+  //     setSubCategories(subcategoriesData);
+  //   } catch (err) {
+  //     setError(err.message);
+  //   }
+  // };
 
   // Options for dropdowns
   const clientOptions = clients.map((client) => ({
@@ -319,8 +372,21 @@ export default function UpdatePolicy() {
 
   // Helper function to get company name by ID
   const getCompanyNameById = (companyId) => {
+    if (!companyId) {
+      console.log("Company ID is missing or invalid");
+      return "Unknown Company"; // Return a default value if the companyId is invalid
+    }
+
+    console.log("Searching for companyId:", companyId);
     const companyObj = companies.find((comp) => comp._id === companyId);
-    return companyObj ? companyObj.companyName : "Unknown Company";
+
+    if (!companyObj) {
+      console.log("Company not found for ID:", companyId);
+      return "Unknown Company"; // Return a default if no company is found
+    }
+
+    console.log("Found company:", companyObj);
+    return companyObj.companyName; // Return the company name
   };
 
   // Initialize tooltips for table rows
@@ -643,11 +709,11 @@ export default function UpdatePolicy() {
                             className="btn btn-success add-btn w-100"
                             style={{ fontSize: "13px" }}
                           >
-                            {/* {!selectedPolicy && (
+                            {!selectedPolicy && (
                               <i className="ri-add-line align-bottom me-1"></i>
                             )}
-                            {selectedPolicy ? "Update" : "Add"} */}
-                            Update
+                            {selectedPolicy ? "Update" : "Add"}
+                            {/* Update */}
                           </button>
                         </div>
                       </>
@@ -744,105 +810,118 @@ export default function UpdatePolicy() {
                         </tr>
                       </thead>
                       <tbody className="list form-check-all">
-                        {/* {policy.length > 0 ? (
-                          policy.map((policy, index) => ( */}
-                        <tr>
-                          {/* Serial Number */}
-                          <td
-                            className="serial number"
-                            data-sort="serial number"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {index + 1}
-                          </td>
-                          {/* Company Name */}
-                          <td
-                            className="issue_date"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {getCompanyNameById(policy.subPolicy?.companyName)}
-                          </td>
-                          {/* Issue Date */}
-                          <td
-                            className="issue_date"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {policy.subPolicy?.issueDate.split("T")[0]}
-                          </td>
-
-                          {/* Expiry Date */}
-                          <td
-                            className="expiry_date"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            {policy.subPolicy?.expiryDate.split("T")[0]}
-                          </td>
-                          <td
-                            className="policy_amount"
-                            style={{ fontSize: ".8rem" }}
-                          >
-                            &nbsp; &nbsp; &nbsp;
-                            {policy.subPolicy?.policyAmount}
-                          </td>
-                          {/* Policy Attachment Link */}
-                          <td
-                            style={{ fontSize: ".8rem", textAlign: "center" }}
-                          >
-                            {policy.subPolicy?.policyAttachment ? (
-                              <a
-                                href={`http://localhost:8000${policy.subPolicy?.policyAttachment}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                        {policy.length > 0 ? (
+                          policy.map((policy, index) => (
+                            <tr>
+                              {/* Serial Number */}
+                              <td
+                                className="serial number"
+                                data-sort="serial number"
+                                style={{ fontSize: ".8rem" }}
                               >
-                                <i
-                                  className="ri-pushpin-fill"
-                                  style={{
-                                    color: "#405189",
-                                    cursor: "pointer",
-                                    fontSize: "15px",
-                                  }}
-                                  data-bs-toggle="tooltip"
-                                  data-bs-placement="top"
-                                  data-bs-title={
-                                    policy.subPolicy?.policyAttachment
-                                  }
-                                ></i>
-                              </a>
-                            ) : (
-                              "No Attachment"
-                            )}
-                          </td>
+                                {index + 1}
+                              </td>
+                              {/* Company Name */}
+                              <td
+                                className="issue_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {getCompanyNameById(
+                                  policy.subPolicy?.[0]?.companyName
+                                )}
+                                {console.log(
+                                  "getcompanyname",
+                                  getCompanyNameById(policy)
+                                )}
+                              </td>
+                              {/* Issue Date */}
+                              <td
+                                className="issue_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {policy.subPolicy?.[0]?.issueDate.split("T")[0]}
+                              </td>
 
-                          {/* Edit and Delete Actions */}
-                          <td>
-                            <div
-                              className="d-flex gap-2 justify-content-center"
-                              style={{ textAlign: "-webkit-center" }}
-                            >
-                              {/* Edit Button */}
-                              <div className="edit">
-                                {/* {console.log("Client ID:", policy.id)} */}
-                                <Link
-                                  to={`/policy-update-form/${policy._id}`}
-                                  onClick={() => handleEdit(policy)}
-                                  style={{ textDecoration: "none" }}
+                              {/* Expiry Date */}
+                              <td
+                                className="expiry_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {
+                                  policy.subPolicy?.[0]?.expiryDate.split(
+                                    "T"
+                                  )[0]
+                                }
+                              </td>
+                              <td
+                                className="policy_amount"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                &nbsp; &nbsp; &nbsp;
+                                {policy.subPolicy?.[0]?.policyAmount}
+                              </td>
+                              {/* Policy Attachment Link */}
+                              <td
+                                style={{
+                                  fontSize: ".8rem",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {policy.subPolicy?.[0]?.policyAttachment ? (
+                                  <a
+                                    href={`http://localhost:8000${policy.subPolicy?.[0]?.policyAttachment}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <i
+                                      className="ri-pushpin-fill"
+                                      style={{
+                                        color: "#405189",
+                                        cursor: "pointer",
+                                        fontSize: "15px",
+                                      }}
+                                      data-bs-toggle="tooltip"
+                                      data-bs-placement="top"
+                                      data-bs-title={
+                                        policy.subPolicy?.[0]?.policyAttachment
+                                      }
+                                    ></i>
+                                  </a>
+                                ) : (
+                                  "No Attachment"
+                                )}
+                              </td>
+
+                              {/* Edit and Delete Actions */}
+                              <td>
+                                <div
+                                  className="d-flex gap-2 justify-content-center"
+                                  style={{ textAlign: "-webkit-center" }}
                                 >
-                                  <i className="ri-edit-2-line"></i>
-                                </Link>
-                              </div>
-                              {/* Delete Button */}
-                              <div className="remove">
-                                <Link
-                                  onClick={() => handleDelete(policy)}
-                                  style={{ textDecoration: "none" }}
-                                >
-                                  <i className="ri-delete-bin-2-line"></i>
-                                </Link>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                        {/* ))
+                                  {/* Edit Button */}
+                                  <div className="edit">
+                                    {/* {console.log("Client ID:", policy.id)} */}
+                                    <Link
+                                      to={`/policy-update-form/${policy._id}`}
+                                      onClick={() => handleEdit(policy)}
+                                      style={{ textDecoration: "none" }}
+                                    >
+                                      <i className="ri-edit-2-line"></i>
+                                    </Link>
+                                  </div>
+                                  {/* Delete Button */}
+                                  <div className="remove">
+                                    <Link
+                                      onClick={() => handleDelete(policy)}
+                                      style={{ textDecoration: "none" }}
+                                    >
+                                      <i className="ri-delete-bin-2-line"></i>
+                                    </Link>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
                         ) : (
                           <tr>
                             <td colSpan="7">
@@ -880,7 +959,7 @@ export default function UpdatePolicy() {
                               </div>
                             </td>
                           </tr>
-                        )} */}
+                        )}
                       </tbody>
                     </table>
                   </div>

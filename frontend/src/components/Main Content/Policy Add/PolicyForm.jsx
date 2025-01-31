@@ -17,7 +17,7 @@ export default function PolicyForm() {
     issueDate: "",
     expiryDate: "",
     policyAmount: "",
-    policyAttachment: null,
+    policyAttachment: [],
   });
   const [companies, setCompanies] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
@@ -76,9 +76,8 @@ export default function PolicyForm() {
     }
     if (!formData.policyAmount)
       newErrors.policyAmount = "Policy Amount is required";
-    if (!formData.policyAttachment)
-      newErrors.policyAttachment = "Policy Attachment is required";
-
+    if (formData.policyAttachment.length === 0)
+      newErrors.policyAttachment = "At least one Policy Attachment is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -93,7 +92,9 @@ export default function PolicyForm() {
   };
 
   const handleFileChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.files[0] });
+    const files = e.target.files;
+    const newFiles = [...files];
+    setFormData({ ...formData, policyAttachment: newFiles }); // Store multiple files
   };
 
   const handleSubmit = async (e) => {
@@ -102,9 +103,15 @@ export default function PolicyForm() {
 
     const formDataWithFiles = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
-      if (value) formDataWithFiles.append(key, value);
+      if (key === "policyAttachment" && value.length > 0) {
+        // Append all files in the policyAttachment array
+        value.forEach((file, index) => {
+          formDataWithFiles.append("policyAttachment", file);
+        });
+      } else if (value) {
+        formDataWithFiles.append(key, value);
+      }
     });
-
     try {
       const response = await fetch("http://localhost:8000/api/policy", {
         method: "POST",
@@ -262,6 +269,7 @@ export default function PolicyForm() {
                     name="policyAttachment"
                     className="form-control"
                     onChange={handleFileChange}
+                    multiple
                   />
                   {errors.policyAttachment && (
                     <small className="text-danger">

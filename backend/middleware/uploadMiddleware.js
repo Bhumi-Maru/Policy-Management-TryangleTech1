@@ -43,7 +43,7 @@ const uploadFields = upload.fields([
   { name: "aadharCard", maxCount: 1 },
   { name: "pan", maxCount: 1 },
   { name: "otherDocuments", maxCount: 10 },
-  { name: "policyAttachment", maxCount: 1 },
+  { name: "policyAttachment", maxCount: 10 },
 ]);
 
 module.exports = { uploadFields };
