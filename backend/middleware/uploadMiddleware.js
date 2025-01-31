@@ -1,23 +1,19 @@
 const multer = require("multer");
 const path = require("path");
 
-// Set the destination for uploaded files
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = "uploads"; // Make sure this directory exists
+    const uploadDir = "uploads"; // Ensure this directory exists
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const extname = path.extname(file.originalname).toLowerCase();
     const basename = path.basename(file.originalname, extname);
-
-    // Generating a unique filename based on the original filename and current timestamp
     const filename = `${basename}-${Date.now()}${extname}`;
     cb(null, filename);
   },
 });
 
-// Creating multer upload middleware
 const upload = multer({
   storage: storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // Max file size: 10MB
@@ -31,7 +27,8 @@ const upload = multer({
     if (extname && mimetype) {
       return cb(null, true);
     } else {
-      cb(
+      // Reject the file with a custom error message
+      return cb(
         new Error("Invalid file type. Only PDF, PNG, and JPG are allowed."),
         false
       );

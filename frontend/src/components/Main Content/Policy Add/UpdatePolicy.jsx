@@ -220,16 +220,13 @@ export default function UpdatePolicy() {
     }
   };
 
-  // form 2 handle submit
+  // Form 2: Handle submit for sub-policy data
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Create FormData object
     const formDataPayload = new FormData();
-
-    // Append form data fields
-    formDataPayload.append("issueDate", formData.issueDate);
     formDataPayload.append("companyName", formData.companyName);
+    formDataPayload.append("issueDate", formData.issueDate);
     formDataPayload.append("expiryDate", formData.expiryDate);
     formDataPayload.append("policyAmount", formData.policyAmount);
 
@@ -238,56 +235,154 @@ export default function UpdatePolicy() {
     }
 
     try {
-      const response = selectedPolicy
-        ? await fetch(
-            `http://localhost:8000/api/policy/${selectedPolicy._id}`,
-            {
-              method: "PUT",
-              body: formDataPayload,
-            }
-          )
-        : await fetch("http://localhost:8000/api/policy", {
+      let response;
+      if (selectedPolicy) {
+        // Update existing sub-policy
+        response = await fetch(
+          `http://localhost:8000/api/policy/${id}/sub-policy/${selectedPolicy._id}`,
+          {
+            method: "PUT",
+            body: formDataPayload,
+          }
+        );
+      } else {
+        // Add new sub-policy
+        response = await fetch(
+          `http://localhost:8000/api/policy/${id}/sub-policy`,
+          {
             method: "POST",
             body: formDataPayload,
-          });
+          }
+        );
+      }
 
       if (response.ok) {
         const updatedPolicy = await response.json();
         if (selectedPolicy) {
-          setPolicy(updatedPolicy);
+          // Update existing sub-policy in the state
+          setPolicy((prevPolicy) => ({
+            ...prevPolicy,
+            subPolicy: prevPolicy.subPolicy.map((sub) =>
+              sub._id === selectedPolicy._id ? updatedPolicy : sub
+            ),
+          }));
         } else {
-          setPolicy((prevPolicies) => [...prevPolicies, updatedPolicy]);
+          // Add new sub-policy to the state
+          setPolicy((prevPolicy) => ({
+            ...prevPolicy,
+            subPolicy: [...prevPolicy.subPolicy, updatedPolicy],
+          }));
         }
-        showSuccessToast("Record updated successfully!");
-        setSelectedPolicy(null);
-        setIsOpenPolicyAttachment(false);
-        setFormData({
-          companyName: "",
-          issueDate: "",
-          expiryDate: "",
-          policyAmount: "",
-          policyAttachment: null,
-        });
+
+        // Show success toast
+        showSuccessToast(
+          selectedPolicy
+            ? "Sub-policy updated successfully!"
+            : "Sub-policy added successfully!"
+        );
       } else {
-        console.error("Failed to save policy:", response.statusText);
+        showErrorToast("Failed to save sub-policy");
       }
     } catch (error) {
-      console.error("Error saving policy:", error);
+      showErrorToast("Error occurred while saving sub-policy");
     }
+  };
+
+  const showErrorToast = (message) => {
+    const toastHTML = `
+      <div class="toast fade show position-fixed top-0 end-0 m-3" role="alert" style="z-index: 1055; background-color: white">
+        <div class="toast-header">
+          <img src="assets/images/logo-sm.png" class="rounded me-2" alt="..." height="20" />
+          <strong class="me-auto">Velzon</strong>
+          <small>Just now</small>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">${message}</div>
+      </div>
+    `;
+
+    let toastContainer = document.getElementById("toast-container");
+    if (!toastContainer) {
+      toastContainer = document.createElement("div");
+      toastContainer.id = "toast-container";
+      toastContainer.style.position = "fixed";
+      toastContainer.style.top = "1rem";
+      toastContainer.style.right = "1rem";
+      toastContainer.style.zIndex = 1055;
+      document.body.appendChild(toastContainer);
+    }
+
+    const toastElement = document.createElement("div");
+    toastElement.innerHTML = toastHTML;
+    toastContainer.appendChild(toastElement);
+
+    const toastInstance = new bootstrap.Toast(
+      toastElement.querySelector(".toast")
+    );
+    toastInstance.show();
+
+    setTimeout(() => {
+      toastInstance.hide();
+      toastElement.remove();
+    }, 3000);
   };
 
   const handleEdit = (policyData) => {
     setSelectedPolicy(policyData);
     setFormData({
-      clientName: policyData.clientName,
       companyName: policyData.companyName,
-      mainCategory: policyData.mainCategory,
-      subCategory: policyData.subCategory,
       issueDate: policyData.issueDate,
       expiryDate: policyData.expiryDate,
       policyAmount: policyData.policyAmount,
       policyAttachment: policyData.policyAttachment,
     });
+  };
+
+  const handleDelete = (policyToDelete) => {
+    const modal = new bootstrap.Modal(
+      document.getElementById("deleteRecordModal")
+    );
+    modal.show();
+
+    const deleteButton = document.getElementById("delete-record");
+    const closeButton = document.getElementById("btn-close");
+
+    const confirmDeletion = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/sub-policy/${policyToDelete._id}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (response.ok) {
+          // Remove the deleted sub-policy from the state
+          setPolicy((prevPolicy) => ({
+            ...prevPolicy,
+            subPolicy: prevPolicy.subPolicy.filter(
+              (sub) => sub._id !== policyToDelete._id
+            ),
+          }));
+
+          modal.hide();
+          showSuccessToast("Sub-policy deleted successfully!");
+        } else {
+          const errorData = await response.json();
+          showErrorToast(`Failed to delete sub-policy: ${errorData.message}`);
+        }
+      } catch (error) {
+        console.error("Error deleting sub-policy:", error);
+        showErrorToast("An error occurred while deleting the sub-policy.");
+      }
+    };
+
+    const cancelDeletion = () => {
+      modal.hide();
+    };
+
+    deleteButton.addEventListener("click", confirmDeletion);
+    closeButton.addEventListener("click", cancelDeletion);
   };
 
   // Display a success toast message
@@ -326,48 +421,6 @@ export default function UpdatePolicy() {
       toastInstance.hide();
       toastElement.remove();
     }, 3000);
-  };
-
-  // Handle deleting a company
-  const handleDelete = (policyToDelete) => {
-    const modal = new bootstrap.Modal(
-      document.getElementById("deleteRecordModal")
-    );
-    modal.show();
-
-    const deleteButton = document.getElementById("delete-record");
-    const closeButton = document.getElementById("btn-close");
-
-    const confirmDeletion = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:8000/api/policy/${policyToDelete._id}`,
-          {
-            method: "DELETE",
-          }
-        );
-        if (response.ok) {
-          setPolicy((prevPolicies) =>
-            prevPolicies.filter((policy) => policy._id !== policyToDelete._id)
-          );
-          modal.hide();
-          showSuccessToast("Policy deleted successfully!");
-        } else {
-          const errorData = await response.json();
-          showSuccessToast(`Failed to delete policy: ${errorData.message}`);
-        }
-      } catch (error) {
-        console.error("Error deleting policy:", error);
-        showSuccessToast("An error occurred while deleting the policy.");
-      }
-    };
-
-    const cancelDeletion = () => {
-      modal.hide();
-    };
-
-    deleteButton.addEventListener("click", confirmDeletion);
-    closeButton.addEventListener("click", cancelDeletion);
   };
 
   // Helper function to get company name by ID
@@ -833,7 +886,7 @@ export default function UpdatePolicy() {
                               className="issue_date"
                               style={{ fontSize: ".8rem" }}
                             >
-                              {policy.issueDate.split("T")[0]}
+                              {policy.issueDate}
                             </td>
 
                             {/* Expiry Date */}
@@ -841,7 +894,7 @@ export default function UpdatePolicy() {
                               className="expiry_date"
                               style={{ fontSize: ".8rem" }}
                             >
-                              {policy.expiryDate.split("T")[0]}
+                              {policy.expiryDate}
                             </td>
                             <td
                               className="policy_amount"
