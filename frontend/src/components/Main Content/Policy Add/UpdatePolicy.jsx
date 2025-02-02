@@ -82,7 +82,7 @@ export default function UpdatePolicy() {
     };
 
     fetchData();
-  }, [selectedPolicy]);
+  }, []);
 
   // const fetchOptions = async () => {
   //   try {
@@ -329,10 +329,15 @@ export default function UpdatePolicy() {
 
   const handleEdit = (policyData) => {
     setSelectedPolicy(policyData);
+
+    const formatDate = (dateString) => {
+      return dateString ? new Date(dateString).toISOString().split("T")[0] : "";
+    };
+
     setFormData({
       companyName: policyData.companyName,
-      issueDate: policyData.issueDate,
-      expiryDate: policyData.expiryDate,
+      issueDate: formatDate(policyData.issueDate),
+      expiryDate: formatDate(policyData.expiryDate),
       policyAmount: policyData.policyAmount,
       policyAttachment: policyData.policyAttachment,
     });

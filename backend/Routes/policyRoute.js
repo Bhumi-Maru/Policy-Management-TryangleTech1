@@ -45,7 +45,7 @@ policyRouter.delete("/sub-policy/:id", deleteSubPolicy);
 
 // Update sub-policy route with file uploads
 policyRouter.put(
-  "/:policyId/sub-policy/:subPolicyId",
+  "/policy/:policyId/sub-policy/:subPolicyId",
   uploadFields,
   updateSubPolicy
 );
