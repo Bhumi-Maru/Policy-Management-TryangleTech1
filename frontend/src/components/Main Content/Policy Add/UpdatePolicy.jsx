@@ -12,6 +12,9 @@ export default function UpdatePolicy() {
   const [clients, setClients] = useState([]);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
+    policyId: id,
+    mainPolicyId: null,
+    mainSubPolicyId: null,
     clientName: "",
     companyName: "",
     mainCategory: "",
@@ -25,7 +28,7 @@ export default function UpdatePolicy() {
   const [companies, setCompanies] = useState([]);
   const [mainCategories, setMainCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [selectedPolicy, setSelectedPolicy] = useState();
   const [isOpenPolicyAttachment, setIsOpenPolicyAttachment] = useState(false);
 
   // Fetch initial data
@@ -62,6 +65,8 @@ export default function UpdatePolicy() {
 
         setPolicy(policyData);
         setFormData({
+          mainPolicyId: policyData.id,
+          mainSubPolicyId: policyData._id,
           clientName: policyData.clientName?._id || "",
           companyName: policyData.companyName?._id || "",
           mainCategory: policyData.mainCategory?._id || "",
@@ -84,53 +89,6 @@ export default function UpdatePolicy() {
     fetchData();
   }, []);
 
-  // const fetchOptions = async () => {
-  //   try {
-  //     const policyRes = await fetch(`http://localhost:8000/api/policy/${id}`);
-  //     if (!policyRes.ok) {
-  //       throw new Error("Failed to fetch policy");
-  //     }
-  //     const policyData = await policyRes.json();
-  //     setPolicy(policyData);
-  //     setFormData({
-  //       clientName: policyData.clientName?._id || "",
-  //       companyName: policyData.companyName?._id || "",
-  //       mainCategory: policyData.mainCategory?._id || "",
-  //       subCategory: policyData.subCategory?._id || "",
-  //       issueDate: policyData.issueDate || "",
-  //       expiryDate: policyData.expiryDate || "",
-  //       policyAmount: policyData.policyAmount || "",
-  //       policyAttachment: policyData.policyAttachment || null,
-  //     });
-  //     console.log("policy Data", policyData);
-  //     // Fetch clients, categories, etc.
-  //     const clientsRes = await fetch("http://localhost:8000/api/clients");
-  //     const clientsData = await clientsRes.json();
-  //     setClients(clientsData);
-
-  //     const companiesRes = await fetch("http://localhost:8000/api/company");
-  //     const companiesData = await companiesRes.json();
-  //     setCompanies(companiesData);
-
-  //     console.log("Fetched companies:", companiesData);
-
-  //     const maincategoriesRes = await fetch(
-  //       "http://localhost:8000/api/mainCategory"
-  //     );
-  //     const maincategoriesData = await maincategoriesRes.json();
-  //     setMainCategories(maincategoriesData);
-  //     console.log("maincategoriesData", maincategoriesData);
-
-  //     const subcategoriesRes = await fetch(
-  //       "http://localhost:8000/api/subCategory"
-  //     );
-  //     const subcategoriesData = await subcategoriesRes.json();
-  //     setSubCategories(subcategoriesData);
-  //   } catch (err) {
-  //     setError(err.message);
-  //   }
-  // };
-
   // Options for dropdowns
   const clientOptions = clients.map((client) => ({
     value: client._id,
@@ -149,7 +107,7 @@ export default function UpdatePolicy() {
     return category ? { ...option, label: category.companyName } : option;
   });
 
-  console.log("updatedCompanyOptions", updatedCompanyOptions);
+  // console.log("updatedCompanyOptions", updatedCompanyOptions);
 
   // main category
   const mainCategoryOptions = (mainCategories || []).map((category) => ({
@@ -164,7 +122,7 @@ export default function UpdatePolicy() {
     return category ? { ...option, label: category.mainCategoryName } : option;
   });
 
-  console.log("updatedMainCategoryOptions", updatedMainCategoryOptions);
+  // console.log("updatedMainCategoryOptions", updatedMainCategoryOptions);
 
   // sub category
 
@@ -180,7 +138,7 @@ export default function UpdatePolicy() {
     return category ? { ...option, label: category.subCategoryName } : option;
   });
 
-  console.log("updatedSubCategoryOptions", updatedSubCategoryOptions);
+  // console.log("updatedSubCategoryOptions", updatedSubCategoryOptions);
 
   const handleSelectChange = (field, option) => {
     setFormData({ ...formData, [field]: option ? option.value : null });
@@ -196,81 +154,96 @@ export default function UpdatePolicy() {
   };
 
   //form 1 handle submit
+
   const handleSubmitFormOne = async (e) => {
     e.preventDefault();
-    const payload = {
-      clientName: formData.clientName,
-      mainCategory: formData.mainCategory,
-      subCategory: formData.subCategory,
-    };
     try {
       const response = await fetch(`http://localhost:8000/api/policy/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientName: formData.clientName,
+          mainCategory: formData.mainCategory,
+          subCategory: formData.subCategory,
+        }),
       });
-      if (response.status === 200) {
-        showSuccessToast("Record updated successfully!");
+
+      if (response.ok) {
+        showSuccessToast("Record updated successfully!", "success");
         navigate("/policy");
       }
-    } catch (error) {
-      console.error("Error updating client data:", error);
+    } catch (err) {
+      console.error("Error updating client data:", err);
     }
   };
+
+  const subPolicyId = selectedPolicy ? selectedPolicy._id : null;
+  console.log("Selected Sub-Policy ID:", subPolicyId);
+
+  const policyId = id; // This is your policy ID
+  console.log("Policy ID:", policyId); // Log the policy ID
 
   // Form 2: Handle submit for sub-policy data
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Submitting form with data:", formData);
-    const formDataPayload = new FormData();
-    formDataPayload.append("companyName", formData.companyName);
-    formDataPayload.append("issueDate", formData.issueDate);
-    formDataPayload.append("expiryDate", formData.expiryDate);
-    formDataPayload.append("policyAmount", formData.policyAmount);
 
-    if (formData.policyAttachment) {
-      formDataPayload.append("policyAttachment", formData.policyAttachment);
-    }
+    const subPolicyId = selectedPolicy ? selectedPolicy._id : null;
+    console.log("Selected Sub-Policy ID:", subPolicyId);
+
+    const policyId = id;
+    console.log("Policy ID:", policyId);
 
     try {
+      // Prepare the payload as a plain object
+      const formDataPayload = {
+        companyName: formData.companyName,
+        issueDate: formData.issueDate,
+        expiryDate: formData.expiryDate,
+        policyAmount: formData.policyAmount,
+        policyAttachment: formData.policyAttachment, // Assuming policyAttachment is a file path or URL
+      };
+
+      console.log("formDataPayload", formDataPayload);
+
       let response;
-      if (selectedPolicy) {
-        // Update existing sub-policy
-        response = await fetch(
-          `http://localhost:8000/api/policy/${id}/sub-policy/${selectedPolicy._id}`,
-          {
-            method: "PUT",
-            body: formDataPayload,
-          }
-        );
-      } else {
-        // Add new sub-policy
-        response = await fetch(
-          `http://localhost:8000/api/policy/${id}/sub-policy`,
-          {
-            method: "POST",
-            body: formDataPayload,
-          }
-        );
-      }
+      const apiUrl = selectedPolicy
+        ? `http://localhost:8000/api/policy/${formData.mainPolicyId}/sub-policy/${formData.mainSubPolicyId}`
+        : `http://localhost:8000/api/policy/${policyId}/sub-policy`;
+
+      const method = selectedPolicy ? "PUT" : "POST";
+
+      response = await fetch(apiUrl, {
+        method,
+        headers: {
+          "Content-Type": "application/json", // This is important for JSON payload
+        },
+        body: JSON.stringify(formDataPayload), // Send the payload as JSON
+      });
 
       if (response.ok) {
-        const updatedPolicy = await response.json();
+        const data = await response.json();
+        console.log("API response:", data);
+        const mainPolicy = await fetch(
+          `http://localhost:8000/api/policy/${formData.mainPolicyId}`
+        );
+        const updatedSubPolicy = data.subPolicy || data;
+
         if (selectedPolicy) {
-          // Update existing sub-policy in the state
+          // Update the selected sub-policy in the state
           setPolicy((prevPolicy) => ({
             ...prevPolicy,
             subPolicy: prevPolicy.subPolicy.map((sub) =>
-              sub._id === selectedPolicy._id ? updatedPolicy : sub
+              sub._id === selectedPolicy._id ? updatedSubPolicy : sub
             ),
           }));
+
+          // navigate("/policy");
         } else {
-          // Add new sub-policy to the state
+          // Add the new sub-policy to the state
           setPolicy((prevPolicy) => ({
             ...prevPolicy,
-            subPolicy: [...prevPolicy.subPolicy, updatedPolicy],
+            subPolicy: [...prevPolicy.subPolicy, updatedSubPolicy],
           }));
         }
 
@@ -281,9 +254,12 @@ export default function UpdatePolicy() {
             : "Sub-policy added successfully!"
         );
       } else {
-        showErrorToast("Failed to save sub-policy");
+        const errorData = await response.json();
+        console.error("API error response:", errorData);
+        showErrorToast("Failed to save sub-policy. Please try again.");
       }
     } catch (error) {
+      console.error("Error occurred while saving sub-policy:", error);
       showErrorToast("Error occurred while saving sub-policy");
     }
   };
@@ -329,12 +305,14 @@ export default function UpdatePolicy() {
 
   const handleEdit = (policyData) => {
     setSelectedPolicy(policyData);
-
+    console.log("policy Data is ", policyData);
     const formatDate = (dateString) => {
       return dateString ? new Date(dateString).toISOString().split("T")[0] : "";
     };
 
     setFormData({
+      mainPolicyId: policyId,
+      mainSubPolicyId: policyData._id,
       companyName: policyData.companyName,
       issueDate: formatDate(policyData.issueDate),
       expiryDate: formatDate(policyData.expiryDate),
@@ -435,7 +413,7 @@ export default function UpdatePolicy() {
       return "Unknown Company"; // Return a default value if the companyId is invalid
     }
 
-    console.log("Searching for companyId:", companyId);
+    // console.log("Searching for companyId:", companyId);
     const companyObj = companies.find((comp) => comp._id === companyId);
 
     if (!companyObj) {
@@ -443,7 +421,7 @@ export default function UpdatePolicy() {
       return "Unknown Company"; // Return a default if no company is found
     }
 
-    console.log("Found company:", companyObj);
+    // console.log("Found company:", companyObj);
     return companyObj.companyName; // Return the company name
   };
 
@@ -600,6 +578,12 @@ export default function UpdatePolicy() {
                       <p className="text-danger">Error: {error}</p>
                     ) : (
                       <>
+                        <input
+                          type="hidden"
+                          name="policyId"
+                          value={formData.policyId}
+                        />
+
                         {/* Company Name */}
                         <div className="col-md-4">
                           <label
@@ -891,7 +875,7 @@ export default function UpdatePolicy() {
                               className="issue_date"
                               style={{ fontSize: ".8rem" }}
                             >
-                              {policy.issueDate}
+                              {policy.issueDate.split("T")[0]}
                             </td>
 
                             {/* Expiry Date */}
@@ -899,7 +883,7 @@ export default function UpdatePolicy() {
                               className="expiry_date"
                               style={{ fontSize: ".8rem" }}
                             >
-                              {policy.expiryDate}
+                              {policy.expiryDate.split("T")[0]}
                             </td>
                             <td
                               className="policy_amount"
