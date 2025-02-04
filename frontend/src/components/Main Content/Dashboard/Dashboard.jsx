@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import * as bootstrap from "bootstrap";
 import "./Dashboard.css";
@@ -9,6 +9,8 @@ export default function Dashboard({ handleMenuClick }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [selectedClientEmail, setSelectedClientEmail] = useState("");
+  const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [filterOption, setFilterOption] = useState("all");
   const { id } = useParams();
 
@@ -21,6 +23,7 @@ export default function Dashboard({ handleMenuClick }) {
         const clientsData = await clientsRes.json();
         setPolicy(policyData);
         setClients(clientsData);
+        console.log("clientsData", clientsData);
       } catch (error) {
         console.error("Error fetching policy Dashboard data:", error);
       }
@@ -40,6 +43,7 @@ export default function Dashboard({ handleMenuClick }) {
       item.expiryDate?.toLowerCase().includes(query)
     );
   });
+
   // Initialize tooltips for table rows
   useEffect(() => {
     const tooltipTriggerList = Array.from(
@@ -60,11 +64,11 @@ export default function Dashboard({ handleMenuClick }) {
     };
   }, [policy]);
 
-  const handleView = (policy) => {
+  const handleView = useCallback((policy) => {
     setSelectedPolicy(policy);
     const modal = new bootstrap.Modal(document.getElementById("showModal"));
     modal.show();
-  };
+  }, []);
 
   // Calculate remaining days
   const calculateDaysLeft = (expiryDate) => {
@@ -107,40 +111,83 @@ export default function Dashboard({ handleMenuClick }) {
   // Apply the day filter to filtered data
   const finalFilteredData = filteredData.filter(filterByDaysRemaining);
 
-  const handleSendMail = async (policy, remainingDays) => {
-    const clientEmail = policy.clientName?.email;
-    const policyNumber = policy.policyNumber;
-    const clientName = `${policy.clientName?.firstName} ${policy.clientName?.lastName}`;
+  console.log("selectedClientEmail", selectedClientEmail);
 
-    const subject = `Policy Update: Policy No. ${policyNumber}`;
-    const body = `Dear ${clientName},\n\nYour policy with the number ${policyNumber} is approaching expiry. Remaining days: ${remainingDays}. Please review the policy details.\n\nThank you!`;
+  const handleSendEmailClick = (policy) => {
+    setSelectedPolicy(policy);
 
-    if (clientEmail) {
-      try {
-        const response = await fetch("http://localhost:7000/api/send-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            to: clientEmail,
-            subject: subject,
-            body: body,
-          }),
-        });
+    // Find the client based on the policy's clientName.clientId
+    const client = clients.find(
+      (client) => client._id === policy.clientName._id
+    );
 
-        const data = await response.json();
-
-        if (data.success) {
-          alert("Email sent successfully!");
-        } else {
-          alert("Failed to send email.");
-        }
-      } catch (error) {
-        console.error("Error sending email:", error);
+    // Check if client exists and if their email is available
+    if (client) {
+      // Check if the client has an email
+      if (client.email) {
+        setSelectedClientEmail(client.email);
+      } else {
+        setSelectedClientEmail("No email found");
+        alert("Client email is missing.");
       }
     } else {
-      console.error("No email found for this client.");
+      setSelectedClientEmail("Client not found");
+      alert("Client not found.");
+    }
+
+    // Show the email modal
+    setEmailModalVisible(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedClientEmail) {
+      alert("Client email is missing.");
+      return;
+    }
+
+    const subject = "Insurance Policy from Tryangle Tech";
+    const body = `
+    Subject: Upcoming Policy Expiry Notice  
+    
+    Dear ${selectedPolicy?.clientName?.firstName} ${selectedPolicy?.clientName?.lastName},  
+    
+    I hope this message finds you well.  
+    
+    We are writing to remind you that your policy (Policy Number: ${selectedPolicy?.policyNumber}) is approaching its expiry date on ${selectedPolicy?.subPolicy[0]?.expiryDate}.  
+    
+    To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
+    
+    If you have any questions or require assistance, our team is here to help. Please don't hesitate to reach out.  
+    
+    Warm regards,  
+    Insurance Company
+    `;
+
+    console.log(body);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: selectedClientEmail,
+          subject: subject,
+          body: body,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Email sent successfully!");
+        setEmailModalVisible(false);
+      } else {
+        alert("Failed to send email.");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
     }
   };
 
@@ -576,10 +623,7 @@ export default function Dashboard({ handleMenuClick }) {
                                                   cursor: "pointer",
                                                 }}
                                                 onClick={() =>
-                                                  handleSendMail(
-                                                    policy,
-                                                    remainingDays
-                                                  )
+                                                  handleSendEmailClick(policy)
                                                 }
                                               >
                                                 <i className="ri-mail-line"></i>
@@ -746,6 +790,77 @@ export default function Dashboard({ handleMenuClick }) {
           </div>
         </div>
       </div>
+
+      {/* Email Modal */}
+      {emailModalVisible && (
+        <div
+          className="modal fade show"
+          style={{ display: "block" }}
+          tabIndex="-1"
+          role="dialog"
+        >
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Send Email</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setEmailModalVisible(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  <strong>Client Email:</strong> {selectedClientEmail}
+                  {console.log("selectedClientEmail", selectedClientEmail)}
+                </p>
+                <p>
+                  <strong>Policy Number:</strong> {selectedPolicy?.policyNumber}
+                </p>
+                <p>
+                  <strong>Message:</strong>
+                </p>
+                <textarea
+                  className="form-control"
+                  rows="4"
+                  defaultValue={`
+Subject: Upcoming Policy Expiry Notice  
+
+Dear ${selectedPolicy?.clientName?.firstName} ${selectedPolicy?.clientName?.lastName},  
+
+I hope this message finds you well.  
+
+We are writing to remind you that your policy (Policy Number: ${selectedPolicy?.policyNumber}) is approaching its expiry date on ${selectedPolicy?.subPolicy[0]?.expiryDate.sp}.  
+
+To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
+
+If you have any questions or require assistance, our team is here to help. Please don't hesitate to reach out.  
+
+Warm regards,  
+Insurance Company
+`}
+                ></textarea>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-light"
+                  onClick={() => setEmailModalVisible(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={handleSendEmail}
+                >
+                  Send Email
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View Detail Modal */}
       <div

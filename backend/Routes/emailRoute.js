@@ -1,12 +1,11 @@
 // Routes/emailRoute.js
 const express = require("express");
 const sendEmail = require("../services/sendEmail");
-
 const emailRouter = express.Router();
 
-// POST route to send an email
 emailRouter.post("/send-email", async (req, res) => {
   const { to, subject, body } = req.body;
+  console.log("Received email data:", { to, subject, body }); // Debug log
 
   if (!to || !subject || !body) {
     return res
@@ -15,6 +14,7 @@ emailRouter.post("/send-email", async (req, res) => {
   }
 
   const result = await sendEmail(to, subject, body);
+  console.log(result); // Debug log
   if (result.success) {
     res.json(result);
   } else {

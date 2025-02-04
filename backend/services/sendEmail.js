@@ -1,20 +1,22 @@
 // services/sendEmail.js
 const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.SENDER_EMAIL, // Sender email address
-    pass: process.env.SENDER_PASSWORD, // Sender email password
+    user: "marub8023@gmail.com", // Sender email address
+    pass: "jxwk ojbz cueh khea", // Sender email password
   },
 });
 
 const sendEmail = async (to, subject, body) => {
   const mailOptions = {
-    from: process.env.SENDER_EMAIL,
-    to: to,
-    subject: subject,
-    text: body,
+    from: "marub8023@gmail.com", // Sender's email
+    to: to, // Receiver's email
+    subject: subject, // Email subject
+    text: body, // Email body
   };
 
   try {
@@ -23,7 +25,13 @@ const sendEmail = async (to, subject, body) => {
     return { success: true, message: "Email sent successfully" };
   } catch (error) {
     console.error("Error sending email:", error);
-    return { success: false, message: "Failed to send email" };
+    // Log the error stack for more detail
+    console.error(error.stack);
+    return {
+      success: false,
+      message: "Failed to send email",
+      error: error.message,
+    };
   }
 };
 
