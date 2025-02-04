@@ -13,8 +13,6 @@ export default function UpdatePolicy() {
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     policyId: id,
-    mainPolicyId: null,
-    mainSubPolicyId: null,
     clientName: "",
     companyName: "",
     mainCategory: "",
@@ -48,7 +46,6 @@ export default function UpdatePolicy() {
           fetch("http://localhost:8000/api/mainCategory"),
           fetch("http://localhost:8000/api/subCategory"),
         ]);
-
         const [
           policyData,
           clientsData,
@@ -65,8 +62,7 @@ export default function UpdatePolicy() {
 
         setPolicy(policyData);
         setFormData({
-          mainPolicyId: policyData.id,
-          mainSubPolicyId: policyData._id,
+          policyId: policyData._id || "", // Ensure the policyId is correctly set
           clientName: policyData.clientName?._id || "",
           companyName: policyData.companyName?._id || "",
           mainCategory: policyData.mainCategory?._id || "",
@@ -76,7 +72,7 @@ export default function UpdatePolicy() {
           policyAmount: policyData.policyAmount || "",
           policyAttachment: policyData.policyAttachment || null,
         });
-
+        console.log("Fetched Policy Data: ", policyData);
         setClients(clientsData);
         setCompanies(companiesData);
         setMainCategories(maincategoriesData);
@@ -87,7 +83,7 @@ export default function UpdatePolicy() {
     };
 
     fetchData();
-  }, []);
+  }, []); // Added id as a dependency
 
   // Options for dropdowns
   const clientOptions = clients.map((client) => ({
@@ -177,77 +173,82 @@ export default function UpdatePolicy() {
     }
   };
 
-  const subPolicyId = selectedPolicy ? selectedPolicy._id : null;
-  console.log("Selected Sub-Policy ID:", subPolicyId);
-
-  const policyId = id; // This is your policy ID
-  console.log("Policy ID:", policyId); // Log the policy ID
+  // const policyId = id; // This is your policy ID
+  // console.log("Policy ID:", formData.policyId); // Log the policy ID
 
   // Form 2: Handle submit for sub-policy data
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting form with data:", formData);
+    console.log("Form Data on Submit: ", formData);
 
-    const subPolicyId = selectedPolicy ? selectedPolicy._id : null;
-    console.log("Selected Sub-Policy ID:", subPolicyId);
-
-    const policyId = id;
-    console.log("Policy ID:", policyId);
+    // Check if all required fields are provided
+    if (
+      !formData.companyName ||
+      !formData.issueDate ||
+      !formData.expiryDate ||
+      !formData.policyAmount ||
+      !formData.policyAttachment
+    ) {
+      setErrors({
+        companyName: !formData.companyName ? "Company name is required." : "",
+        issueDate: !formData.issueDate ? "Issue date is required." : "",
+        expiryDate: !formData.expiryDate ? "Expiry date is required." : "",
+        policyAmount: !formData.policyAmount
+          ? "Policy amount is required."
+          : "",
+        policyAttachment: !formData.policyAttachment
+          ? "Policy attachment is required."
+          : "",
+      });
+      return;
+    }
 
     try {
-      // Prepare the payload as a plain object
       const formDataPayload = {
+        policyId: formData.policyId,
         companyName: formData.companyName,
         issueDate: formData.issueDate,
         expiryDate: formData.expiryDate,
         policyAmount: formData.policyAmount,
-        policyAttachment: formData.policyAttachment, // Assuming policyAttachment is a file path or URL
+        policyAttachment: formData.policyAttachment,
       };
 
-      console.log("formDataPayload", formDataPayload);
-
       let response;
-      const apiUrl = selectedPolicy
-        ? `http://localhost:8000/api/policy/${formData.mainPolicyId}/sub-policy/${formData.mainSubPolicyId}`
-        : `http://localhost:8000/api/policy/${policyId}/sub-policy`;
 
-      const method = selectedPolicy ? "PUT" : "POST";
+      // If selectedPolicy exists, it means we're updating an existing sub-policy
+      const apiUrl = selectedPolicy
+        ? `http://localhost:8000/api/policy/${formData.policyId}/sub-policy/${selectedPolicy._id}` // Update sub-policy
+        : `http://localhost:8000/api/policy/${formData.policyId}/sub-policy`; // Add new sub-policy
+
+      const method = selectedPolicy ? "PUT" : "POST"; // Determine the HTTP method (PUT for update, POST for new)
 
       response = await fetch(apiUrl, {
         method,
-        headers: {
-          "Content-Type": "application/json", // This is important for JSON payload
-        },
-        body: JSON.stringify(formDataPayload), // Send the payload as JSON
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formDataPayload),
       });
 
       if (response.ok) {
         const data = await response.json();
         console.log("API response:", data);
-        const mainPolicy = await fetch(
-          `http://localhost:8000/api/policy/${formData.mainPolicyId}`
-        );
-        const updatedSubPolicy = data.subPolicy || data;
+        const updatedSubPolicy = data.subPolicy || data; // Sub-policy is returned in the response
 
+        // If we are updating a sub-policy
         if (selectedPolicy) {
-          // Update the selected sub-policy in the state
           setPolicy((prevPolicy) => ({
             ...prevPolicy,
             subPolicy: prevPolicy.subPolicy.map((sub) =>
               sub._id === selectedPolicy._id ? updatedSubPolicy : sub
             ),
           }));
-
-          // navigate("/policy");
         } else {
-          // Add the new sub-policy to the state
+          // If we are adding a new sub-policy
           setPolicy((prevPolicy) => ({
             ...prevPolicy,
             subPolicy: [...prevPolicy.subPolicy, updatedSubPolicy],
           }));
         }
 
-        // Show success toast
         showSuccessToast(
           selectedPolicy
             ? "Sub-policy updated successfully!"
@@ -255,8 +256,7 @@ export default function UpdatePolicy() {
         );
       } else {
         const errorData = await response.json();
-        console.error("API error response:", errorData);
-        showErrorToast("Failed to save sub-policy. Please try again.");
+        showErrorToast(`Failed to save sub-policy. ${errorData.message}`);
       }
     } catch (error) {
       console.error("Error occurred while saving sub-policy:", error);
@@ -306,16 +306,11 @@ export default function UpdatePolicy() {
   const handleEdit = (policyData) => {
     setSelectedPolicy(policyData);
     console.log("policy Data is ", policyData);
-    const formatDate = (dateString) => {
-      return dateString ? new Date(dateString).toISOString().split("T")[0] : "";
-    };
-
     setFormData({
-      mainPolicyId: policyId,
-      mainSubPolicyId: policyData._id,
+      policyId: policyData.policyId,
       companyName: policyData.companyName,
-      issueDate: formatDate(policyData.issueDate),
-      expiryDate: formatDate(policyData.expiryDate),
+      issueDate: policyData.issueDate,
+      expiryDate: policyData.expiryDate,
       policyAmount: policyData.policyAmount,
       policyAttachment: policyData.policyAttachment,
     });
@@ -579,9 +574,10 @@ export default function UpdatePolicy() {
                     ) : (
                       <>
                         <input
-                          type="hidden"
+                          type="text"
                           name="policyId"
-                          value={formData.policyId}
+                          value={formData.policyId || ""}
+                          onChange={handleInputChange}
                         />
 
                         {/* Company Name */}

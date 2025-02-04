@@ -87,6 +87,7 @@ const getAllPolicies = async (req, res) => {
 };
 
 // Fetch a policy by ID
+// Fetch a policy by ID
 const getPolicyById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -96,8 +97,9 @@ const getPolicyById = async (req, res) => {
       .populate("subCategory", "subCategoryName")
       .populate(
         "subPolicy",
-        "companyName entryDate issueDate expiryDate policyAmount policyAttachment"
+        "companyName entryDate issueDate expiryDate policyAmount policyAttachment policyId" // Ensure policyId is populated
       );
+
     if (!policy) {
       return res.status(404).json({ message: "Policy not found" });
     }
@@ -189,27 +191,13 @@ const updatePolicy = async (req, res) => {
 };
 
 /////// addSub policy ////////
+// Add a sub-policy to an existing policy
+// Add a sub-policy to an existing policy
 const addSubPolicy = async (req, res) => {
   try {
-    console.log("Request Body:", req.body);
-    console.log("Request Files:", req.files);
-
     const { id } = req.params; // Get policy ID from the route parameter
     const { companyName, entryDate, issueDate, expiryDate, policyAmount } =
       req.body;
-
-    // Validate required fields
-    if (
-      !companyName ||
-      !issueDate ||
-      !expiryDate ||
-      !policyAmount ||
-      !req.files?.policyAttachment
-    ) {
-      return res
-        .status(400)
-        .json({ message: "All required fields must be provided." });
-    }
 
     // Process the uploaded files
     const policyAttachments = req.files.policyAttachment.map(
@@ -224,6 +212,7 @@ const addSubPolicy = async (req, res) => {
       expiryDate,
       policyAmount,
       policyAttachment: policyAttachments,
+      policyId: id, // Associate with the policy
     });
 
     // Save the sub-policy
@@ -238,8 +227,19 @@ const addSubPolicy = async (req, res) => {
     policy.subPolicy.push(newSubPolicy._id); // Add sub-policy ID to the policy's subPolicy array
     await policy.save(); // Save the updated policy
 
+    // Now we populate the policy with the updated subPolicy including policyId
+    const updatedPolicy = await Policy.findById(id)
+      .populate("clientName", "firstName lastName")
+      .populate("mainCategory", "mainCategoryName")
+      .populate("subCategory", "subCategoryName")
+      .populate(
+        "subPolicy",
+        "companyName entryDate issueDate expiryDate policyAmount policyAttachment policyId"
+      );
+
     return res.status(201).json({
       message: "Sub-policy added successfully",
+      policy: updatedPolicy,
       subPolicy: newSubPolicy,
     });
   } catch (error) {
@@ -321,6 +321,7 @@ const deleteSubPolicy = async (req, res) => {
 };
 
 // Update Sub-Policy
+// Update Sub-Policy
 const updateSubPolicy = async (req, res) => {
   try {
     const { policyId, subPolicyId } = req.params;
@@ -344,6 +345,7 @@ const updateSubPolicy = async (req, res) => {
       issueDate: issueDate || existingSubPolicy.issueDate,
       expiryDate: expiryDate || existingSubPolicy.expiryDate,
       policyAmount: policyAmount || existingSubPolicy.policyAmount,
+      policyId: policyId || existingSubPolicy.policyId, // Set policyId if missing
     };
 
     // Handle file updates if any
@@ -373,15 +375,16 @@ const updateSubPolicy = async (req, res) => {
       return res.status(404).json({ message: "Policy not found" });
     }
 
+    // Find and update the sub-policy in the policy's subPolicy array
     const subPolicyIndex = policy.subPolicy.findIndex(
       (subPolicy) => subPolicy.toString() === subPolicyId
     );
     if (subPolicyIndex >= 0) {
-      policy.subPolicy[subPolicyIndex] = subPolicyId;
+      policy.subPolicy[subPolicyIndex] = updatedSubPolicy._id; // Ensure you are storing the updated _id
       await policy.save();
     }
 
-    // Ensure a clean response for the `policyAttachment`
+    // Return the updated sub-policy data as response
     return res.status(200).json({
       message: "Sub-policy updated successfully",
       subPolicy: {

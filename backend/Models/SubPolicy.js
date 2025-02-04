@@ -11,6 +11,7 @@ const subPolicySchema = new mongoose.Schema({
   expiryDate: { type: Date, required: true },
   policyAmount: { type: String, required: true },
   policyAttachment: [{ type: String, default: null }],
+  policyId: { type: mongoose.Schema.Types.ObjectId, ref: "Policy" },
 });
 
 const SubPolicy = mongoose.model("SubPolicy", subPolicySchema);
