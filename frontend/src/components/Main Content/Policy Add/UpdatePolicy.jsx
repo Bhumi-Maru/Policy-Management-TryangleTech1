@@ -191,8 +191,8 @@ export default function UpdatePolicy() {
       const formDataPayload = {
         policyId: formData.policyId, // This should be your policy ID
         companyName: formData.companyName,
-        issueDate: formData.issueDate,
-        expiryDate: formData.expiryDate,
+        issueDate: new Date(formData.issueDate).toISOString(), // Convert to ISO string format
+        expiryDate: new Date(formData.expiryDate).toISOString(), // Convert to ISO string format
         policyAmount: formData.policyAmount,
         policyAttachment: formData.policyAttachment,
       };
@@ -560,7 +560,7 @@ export default function UpdatePolicy() {
                     ) : (
                       <>
                         <input
-                          type="text"
+                          type="hidden"
                           name="policyId"
                           value={formData.policyId || ""}
                           onChange={handleInputChange}
@@ -601,7 +601,7 @@ export default function UpdatePolicy() {
                             type="date"
                             name="issueDate"
                             className="form-control"
-                            value={formData?.issueDate}
+                            value={formData.issueDate}
                             onChange={handleInputChange}
                           />
                           {errors.issueDate && (
@@ -626,6 +626,7 @@ export default function UpdatePolicy() {
                             value={formData.expiryDate}
                             onChange={handleInputChange}
                           />
+                          {console.log("formdata expiry", formData.expiryDate)}
                           {errors.expiryDate && (
                             <small className="text-danger">
                               {errors.expiryDate}
@@ -695,14 +696,14 @@ export default function UpdatePolicy() {
                                   color: "black",
                                 }}
                               >
-                                {formData?.policyAttachment &&
-                                typeof formData?.policyAttachment === "string"
-                                  ? formData?.policyAttachment
+                                {formData.policyAttachment &&
+                                typeof formData.policyAttachment === "string"
+                                  ? formData.policyAttachment
                                       .split("/")
                                       .pop()
                                       .replace(/-\d+/, "")
-                                  : formData?.policyAttachment
-                                  ? formData?.policyAttachment.name
+                                  : formData.policyAttachment
+                                  ? formData.policyAttachment
                                   : "No Policy Attachment Available"}
                               </span>
                               <button

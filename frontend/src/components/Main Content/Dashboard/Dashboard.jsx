@@ -107,6 +107,43 @@ export default function Dashboard({ handleMenuClick }) {
   // Apply the day filter to filtered data
   const finalFilteredData = filteredData.filter(filterByDaysRemaining);
 
+  const handleSendMail = async (policy, remainingDays) => {
+    const clientEmail = policy.clientName?.email;
+    const policyNumber = policy.policyNumber;
+    const clientName = `${policy.clientName?.firstName} ${policy.clientName?.lastName}`;
+
+    const subject = `Policy Update: Policy No. ${policyNumber}`;
+    const body = `Dear ${clientName},\n\nYour policy with the number ${policyNumber} is approaching expiry. Remaining days: ${remainingDays}. Please review the policy details.\n\nThank you!`;
+
+    if (clientEmail) {
+      try {
+        const response = await fetch("http://localhost:7000/api/send-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: clientEmail,
+            subject: subject,
+            body: body,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert("Email sent successfully!");
+        } else {
+          alert("Failed to send email.");
+        }
+      } catch (error) {
+        console.error("Error sending email:", error);
+      }
+    } else {
+      console.error("No email found for this client.");
+    }
+  };
+
   return (
     <>
       {/* Dashboard */}
@@ -418,146 +455,161 @@ export default function Dashboard({ handleMenuClick }) {
                               {filteredData.slice(0, 10).length > 0 ? (
                                 filteredData
                                   .slice(0, 10)
-                                  .map((policy, index) => (
-                                    <tr key={index}>
-                                      {/* Serial Number */}
-                                      <td
-                                        className="serial number"
-                                        data-sort="serial number"
-                                        style={{ fontSize: ".8rem" }}
-                                      >
-                                        {index + 1}
-                                      </td>
+                                  .map((policy, index) => {
+                                    // Get the first expiry date from subPolicy (if it exists)
+                                    const firstExpiryDate =
+                                      policy.subPolicy &&
+                                      policy.subPolicy.length > 0
+                                        ? policy.subPolicy[0].expiryDate
+                                        : null;
 
-                                      {/* Policy Number */}
-                                      <td
-                                        className="policy number"
-                                        data-sort="policy number"
-                                        style={{ fontSize: ".8rem" }}
-                                      >
-                                        {policy.policyNumber}
-                                      </td>
+                                    // Calculate remaining days based on the first expiry date
+                                    const remainingDays = firstExpiryDate
+                                      ? calculateDaysLeft(firstExpiryDate)
+                                      : "N/A";
 
-                                      {/* Customer Name */}
-                                      <td
-                                        className="client_name"
-                                        style={{ fontSize: ".8rem" }}
-                                      >
-                                        {`${
-                                          policy.clientName?.firstName || ""
-                                        } ${policy.clientName?.lastName || ""}`}
-                                      </td>
-
-                                      {/* Expiry Date */}
-                                      <td
-                                        className="expiry_date"
-                                        style={{ fontSize: ".8rem" }}
-                                      >
-                                        {policy.subPolicy.map((sub) => {
-                                          return sub ? sub.expiryDate : "hello";
-                                        })}
-                                      </td>
-
-                                      {console.log(
-                                        "policy hoo",
-                                        policy.subPolicy.map((sub) => {
-                                          return sub ? sub.expiryDate : "hello";
-                                        })
-                                      )}
-
-                                      {/* Remaining days */}
-                                      <td
-                                        className="remaining_days"
-                                        style={{ fontSize: ".8rem" }}
-                                      >
-                                        {calculateDaysLeft(policy.expiryDate)}
-                                      </td>
-
-                                      {/* Document Link */}
-                                      <td style={{ textAlign: "center" }}>
-                                        {policy.policyAttachment ? (
-                                          <a
-                                            href={`http://localhost:8000${policy.policyAttachment}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ textDecoration: "none" }}
-                                            data-bs-toggle="tooltip"
-                                            title={policy.policyAttachment
-                                              .split(/[/\\]/)
-                                              .pop()}
-                                          >
-                                            <i
-                                              className="ri-pushpin-fill"
-                                              style={{
-                                                color: "#405189",
-                                                cursor: "pointer",
-                                                fontSize: "15px",
-                                              }}
-                                            ></i>
-                                          </a>
-                                        ) : (
-                                          "No Attachment"
-                                        )}
-                                      </td>
-
-                                      {/* View Actions */}
-                                      <td>
-                                        <div
-                                          className="d-flex gap-2 justify-content-center"
-                                          style={{
-                                            textAlign: "-webkit-center",
-                                          }}
+                                    return (
+                                      <tr key={index}>
+                                        {/* Serial Number */}
+                                        <td
+                                          className="serial number"
+                                          data-sort="serial number"
+                                          style={{ fontSize: ".8rem" }}
                                         >
-                                          {/* View Button */}
-                                          <div className="view">
-                                            <Link
-                                              to="#"
-                                              onClick={() => handleView(policy)}
+                                          {index + 1}
+                                        </td>
+
+                                        {/* Policy Number */}
+                                        <td
+                                          className="policy number"
+                                          data-sort="policy number"
+                                          style={{ fontSize: ".8rem" }}
+                                        >
+                                          {policy.policyNumber}
+                                        </td>
+
+                                        {/* Customer Name */}
+                                        <td
+                                          className="client_name"
+                                          style={{ fontSize: ".8rem" }}
+                                        >
+                                          {`${
+                                            policy.clientName?.firstName || ""
+                                          } ${
+                                            policy.clientName?.lastName || ""
+                                          }`}
+                                        </td>
+
+                                        {/* Expiry Date (first expiry date from subPolicy) */}
+                                        <td
+                                          className="expiry_date"
+                                          style={{ fontSize: ".8rem" }}
+                                        >
+                                          {firstExpiryDate
+                                            ? firstExpiryDate.split("T")[0]
+                                            : "N/A"}
+                                        </td>
+
+                                        {/* Remaining Days */}
+                                        <td
+                                          className="remaining_days"
+                                          style={{ fontSize: ".8rem" }}
+                                        >
+                                          {remainingDays}
+                                        </td>
+
+                                        {/* Document Link */}
+                                        <td style={{ textAlign: "center" }}>
+                                          {policy.policyAttachment ? (
+                                            <a
+                                              href={`http://localhost:8000${policy.policyAttachment}`}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
                                               style={{ textDecoration: "none" }}
+                                              data-bs-toggle="tooltip"
+                                              title={policy.policyAttachment
+                                                .split(/[/\\]/)
+                                                .pop()}
                                             >
-                                              <i class="bx bx-show"></i>
-                                            </Link>
+                                              <i
+                                                className="ri-pushpin-fill"
+                                                style={{
+                                                  color: "#405189",
+                                                  cursor: "pointer",
+                                                  fontSize: "15px",
+                                                }}
+                                              ></i>
+                                            </a>
+                                          ) : (
+                                            "No Attachment"
+                                          )}
+                                        </td>
+
+                                        {/* View Actions */}
+                                        <td>
+                                          <div
+                                            className="d-flex gap-2 justify-content-center"
+                                            style={{
+                                              textAlign: "-webkit-center",
+                                            }}
+                                          >
+                                            {/* View Button */}
+                                            <div className="view">
+                                              <Link
+                                                to="#"
+                                                onClick={() =>
+                                                  handleView(policy)
+                                                }
+                                                style={{
+                                                  textDecoration: "none",
+                                                }}
+                                              >
+                                                <i className="bx bx-show"></i>
+                                              </Link>
+                                            </div>
+                                            {/* Mail button */}
+
+                                            <div className="view">
+                                              <Link
+                                                style={{
+                                                  textDecoration: "none",
+                                                  cursor: "pointer",
+                                                }}
+                                                onClick={() =>
+                                                  handleSendMail(
+                                                    policy,
+                                                    remainingDays
+                                                  )
+                                                }
+                                              >
+                                                <i className="ri-mail-line"></i>
+                                              </Link>
+                                            </div>
+                                            {/* WhatsApp button */}
+                                            <div className="view">
+                                              <Link
+                                                style={{
+                                                  textDecoration: "none",
+                                                }}
+                                              >
+                                                <i className="bx bxl-whatsapp"></i>
+                                              </Link>
+                                            </div>
+                                            {/* Text button */}
+                                            <div className="view">
+                                              <Link
+                                                style={{
+                                                  textDecoration: "none",
+                                                }}
+                                              >
+                                                <i className="bx bx-text"></i>
+                                              </Link>
+                                            </div>
                                           </div>
-                                          {/* mail button */}
-                                          <div className="view">
-                                            <Link
-                                              // to="/notification"
-                                              // onClick={() =>
-                                              //   handleMenuClick("Notification")
-                                              // }
-                                              style={{ textDecoration: "none" }}
-                                            >
-                                              <i class="ri-mail-line"></i>
-                                            </Link>
-                                          </div>
-                                          {/* whatsapp button */}
-                                          <div className="view">
-                                            <Link
-                                              // to="/notification"
-                                              // onClick={() =>
-                                              //   handleMenuClick("Notification")
-                                              // }
-                                              style={{ textDecoration: "none" }}
-                                            >
-                                              <i class="bx bxl-whatsapp"></i>
-                                            </Link>
-                                          </div>
-                                          {/* text button */}
-                                          <div className="view">
-                                            <Link
-                                              // to="/notification"
-                                              // onClick={() =>
-                                              //   handleMenuClick("Notification")
-                                              // }
-                                              style={{ textDecoration: "none" }}
-                                            >
-                                              <i class="bx bx-text"></i>
-                                            </Link>
-                                          </div>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))
+                                        </td>
+                                      </tr>
+                                    );
+                                  })
                               ) : (
                                 <tr>
                                   <td colSpan="7">
@@ -768,17 +820,20 @@ export default function Dashboard({ handleMenuClick }) {
                       type="text"
                       name="companyName"
                       className="form-control"
-                      value={
-                        selectedPolicy?.companyName
-                          ? getCompanyName(selectedPolicy.companyName)
-                          : "N/A"
-                      }
+                      // value={
+                      //   selectedPolicy?.companyName
+                      //     ? getCompanyName(selectedPolicy.companyName)
+                      //     : "N/A"
+                      // }
+                      value={getCompanyName(
+                        selectedPolicy?.subPolicy?.[0]?.companyId
+                      )}
                       readOnly
                     />
                   </div>
                   {console.log(
-                    "selectedPolicy",
-                    selectedPolicy?.subPolicy[0].companyName
+                    "selectedPolicy 1",
+                    getCompanyName(selectedPolicy.subPolicy)
                   )}
                   {/* policy name */}
                   <div className="mb-3 col-md-6">

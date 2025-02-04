@@ -12,6 +12,7 @@ const companyRouter = require("./Routes/CompanyRoutes");
 const mainCategoryRouter = require("./Routes/mainCategoryRoute");
 const subCategoryRouter = require("./Routes/subCategoryRoutes");
 const unifiedRouter = require("./Routes/UnifiedRoutes");
+const emailRouter = require("./Routes/emailRoute");
 
 dotenv.config();
 
@@ -34,6 +35,9 @@ app.use("/api", agentRouter);
 app.use("/api", companyRouter);
 app.use("/api", mainCategoryRouter);
 app.use("/api", subCategoryRouter);
+
+// Add the email route here
+app.use("/api", emailRouter);
 
 app.get("/", (req, res) => {
   res.send("<h1>Hello</h1 >");
