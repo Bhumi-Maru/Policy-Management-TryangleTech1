@@ -99,6 +99,11 @@ export default function Dashboard({ handleMenuClick }) {
     }
   };
 
+  const getCompanyName = (companyId) => {
+    const client = clients.find((client) => client._id === companyId);
+    return client ? client.companyName || "Unknown Company" : "N/A";
+  };
+
   // Apply the day filter to filtered data
   const finalFilteredData = filteredData.filter(filterByDaysRemaining);
 
@@ -448,8 +453,17 @@ export default function Dashboard({ handleMenuClick }) {
                                         className="expiry_date"
                                         style={{ fontSize: ".8rem" }}
                                       >
-                                        {policy.expiryDate || "N/A"}
+                                        {policy.subPolicy.map((sub) => {
+                                          return sub ? sub.expiryDate : "hello";
+                                        })}
                                       </td>
+
+                                      {console.log(
+                                        "policy hoo",
+                                        policy.subPolicy.map((sub) => {
+                                          return sub ? sub.expiryDate : "hello";
+                                        })
+                                      )}
 
                                       {/* Remaining days */}
                                       <td
@@ -754,9 +768,18 @@ export default function Dashboard({ handleMenuClick }) {
                       type="text"
                       name="companyName"
                       className="form-control"
-                      value={selectedPolicy.companyName?.companyName}
+                      value={
+                        selectedPolicy?.companyName
+                          ? getCompanyName(selectedPolicy.companyName)
+                          : "N/A"
+                      }
+                      readOnly
                     />
                   </div>
+                  {console.log(
+                    "selectedPolicy",
+                    selectedPolicy?.subPolicy[0].companyName
+                  )}
                   {/* policy name */}
                   <div className="mb-3 col-md-6">
                     <label

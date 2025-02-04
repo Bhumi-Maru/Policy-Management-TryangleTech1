@@ -181,31 +181,15 @@ export default function UpdatePolicy() {
     e.preventDefault();
     console.log("Form Data on Submit: ", formData);
 
-    // Check if all required fields are provided
-    if (
-      !formData.companyName ||
-      !formData.issueDate ||
-      !formData.expiryDate ||
-      !formData.policyAmount ||
-      !formData.policyAttachment
-    ) {
-      setErrors({
-        companyName: !formData.companyName ? "Company name is required." : "",
-        issueDate: !formData.issueDate ? "Issue date is required." : "",
-        expiryDate: !formData.expiryDate ? "Expiry date is required." : "",
-        policyAmount: !formData.policyAmount
-          ? "Policy amount is required."
-          : "",
-        policyAttachment: !formData.policyAttachment
-          ? "Policy attachment is required."
-          : "",
-      });
+    // Ensure policyId is correctly set
+    if (!formData.policyId) {
+      console.log("Policy ID is missing", formData.policyId);
       return;
     }
 
     try {
       const formDataPayload = {
-        policyId: formData.policyId,
+        policyId: formData.policyId, // This should be your policy ID
         companyName: formData.companyName,
         issueDate: formData.issueDate,
         expiryDate: formData.expiryDate,
@@ -224,7 +208,9 @@ export default function UpdatePolicy() {
 
       response = await fetch(apiUrl, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(formDataPayload),
       });
 
@@ -442,7 +428,7 @@ export default function UpdatePolicy() {
         }
       });
     };
-  }, [policy]);
+  }, [policy.subPolicy]);
 
   return (
     <>
@@ -709,14 +695,14 @@ export default function UpdatePolicy() {
                                   color: "black",
                                 }}
                               >
-                                {formData.policyAttachment &&
-                                typeof formData.policyAttachment === "string"
-                                  ? formData.policyAttachment
+                                {formData?.policyAttachment &&
+                                typeof formData?.policyAttachment === "string"
+                                  ? formData?.policyAttachment
                                       .split("/")
                                       .pop()
                                       .replace(/-\d+/, "")
-                                  : formData.policyAttachment
-                                  ? formData.policyAttachment.name
+                                  : formData?.policyAttachment
+                                  ? formData?.policyAttachment.name
                                   : "No Policy Attachment Available"}
                               </span>
                               <button
@@ -888,6 +874,7 @@ export default function UpdatePolicy() {
                               &nbsp; &nbsp; &nbsp;
                               {policy.policyAmount}
                             </td>
+
                             {/* Policy Attachment Link */}
                             <td
                               style={{
@@ -895,9 +882,9 @@ export default function UpdatePolicy() {
                                 textAlign: "center",
                               }}
                             >
-                              {policy.policyAttachment ? (
-                                <a
-                                  href={`http://localhost:8000${policy.policyAttachment}`}
+                              {policy?.policyAttachment ? (
+                                <Link
+                                  to={`http://localhost:8000/uploads/${policy?.policyAttachment}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -910,9 +897,9 @@ export default function UpdatePolicy() {
                                     }}
                                     data-bs-toggle="tooltip"
                                     data-bs-placement="top"
-                                    data-bs-title={policy.policyAttachment}
+                                    data-bs-title={policy?.policyAttachment}
                                   ></i>
-                                </a>
+                                </Link>
                               ) : (
                                 "No Attachment"
                               )}
