@@ -147,13 +147,19 @@ export default function Dashboard({ handleMenuClick }) {
 
     const subject = "Insurance Policy from Tryangle Tech";
     const body = `
-    Subject: Upcoming Policy Expiry Notice  
+     
     
-    Dear ${selectedPolicy?.clientName?.firstName} ${selectedPolicy?.clientName?.lastName},  
+    Dear ${selectedPolicy?.clientName?.firstName} ${
+      selectedPolicy?.clientName?.lastName
+    },  
     
     I hope this message finds you well.  
     
-    We are writing to remind you that your policy (Policy Number: ${selectedPolicy?.policyNumber}) is approaching its expiry date on ${selectedPolicy?.subPolicy[0]?.expiryDate}.  
+    We are writing to remind you that your policy (Policy Number: ${
+      selectedPolicy?.policyNumber
+    }) is approaching its expiry date on ${
+      selectedPolicy?.subPolicy[0]?.expiryDate.split("T")[0]
+    }.  
     
     To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
     
@@ -162,8 +168,6 @@ export default function Dashboard({ handleMenuClick }) {
     Warm regards,  
     Insurance Company
     `;
-
-    console.log(body);
 
     try {
       const response = await fetch("http://localhost:8000/api/send-email", {
@@ -826,11 +830,17 @@ export default function Dashboard({ handleMenuClick }) {
                   defaultValue={`
 Subject: Upcoming Policy Expiry Notice  
 
-Dear ${selectedPolicy?.clientName?.firstName} ${selectedPolicy?.clientName?.lastName},  
+Dear ${selectedPolicy?.clientName?.firstName} ${
+                    selectedPolicy?.clientName?.lastName
+                  },  
 
 I hope this message finds you well.  
 
-We are writing to remind you that your policy (Policy Number: ${selectedPolicy?.policyNumber}) is approaching its expiry date on ${selectedPolicy?.subPolicy[0]?.expiryDate.sp}.  
+We are writing to remind you that your policy (Policy Number: ${
+                    selectedPolicy?.policyNumber
+                  }) is approaching its expiry date on ${
+                    selectedPolicy?.subPolicy[0]?.expiryDate.split("T")[0]
+                  }.  
 
 To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
 
