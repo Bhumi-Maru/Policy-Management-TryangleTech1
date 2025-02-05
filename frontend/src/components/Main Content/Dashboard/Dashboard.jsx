@@ -103,15 +103,10 @@ export default function Dashboard({ handleMenuClick }) {
     }
   };
 
-  const getCompanyName = (companyId) => {
-    const client = clients.find((client) => client._id === companyId);
-    return client ? client.companyName || "Unknown Company" : "N/A";
-  };
-
   // Apply the day filter to filtered data
   const finalFilteredData = filteredData.filter(filterByDaysRemaining);
 
-  console.log("selectedClientEmail", selectedClientEmail);
+  console.log("finalFilteredData", finalFilteredData);
 
   const handleSendEmailClick = (policy) => {
     setSelectedPolicy(policy);
@@ -194,6 +189,21 @@ export default function Dashboard({ handleMenuClick }) {
       console.error("Error sending email:", error);
     }
   };
+
+  // Function to fetch company name based on companyName ID in subPolicy
+  const getCompanyNameById = (companyId) => {
+    // Assuming the policy data has a list of companies stored in 'clients'
+    const company = policy.find((policy) => policy._id === companyId);
+
+    // If the company exists in the policy, return its name, otherwise "No Company Found"
+    return company ? company.companyName : "No Company Name Found";
+  };
+
+  // Assuming `selectedPolicy` is correctly set from the policies data
+  const companyId = selectedPolicy?.subPolicy[0]?.companyName; // Get companyId from subPolicy
+  console.log("companyId", companyId);
+  const companyName = getCompanyNameById(companyId);
+  console.log("Company Name:", companyName);
 
   return (
     <>
@@ -503,8 +513,8 @@ export default function Dashboard({ handleMenuClick }) {
                               </tr>
                             </thead>
                             <tbody className="list form-check-all">
-                              {filteredData.slice(0, 10).length > 0 ? (
-                                filteredData
+                              {finalFilteredData.slice(0, 10).length > 0 ? (
+                                finalFilteredData
                                   .slice(0, 10)
                                   .map((policy, index) => {
                                     // Get the first expiry date from subPolicy (if it exists)
@@ -950,15 +960,13 @@ Insurance Company
                       //     ? getCompanyName(selectedPolicy.companyName)
                       //     : "N/A"
                       // }
-                      value={getCompanyName(
-                        selectedPolicy?.subPolicy?.[0]?.companyId
-                      )}
+                      value={companyName ? companyName : "Company Not Found"}
                       readOnly
                     />
                   </div>
                   {console.log(
                     "selectedPolicy 1",
-                    getCompanyName(selectedPolicy.subPolicy)
+                    selectedPolicy.subPolicy[0].companyName
                   )}
                   {/* policy name */}
                   <div className="mb-3 col-md-6">

@@ -7,7 +7,6 @@ import * as bootstrap from "bootstrap";
 export default function UpdatePolicy() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [index, setIndex] = useState(0);
   const [errors, setErrors] = useState({});
   const [clients, setClients] = useState([]);
   const [error, setError] = useState(null);
@@ -62,7 +61,7 @@ export default function UpdatePolicy() {
 
         setPolicy(policyData);
         setFormData({
-          policyId: policyData._id || "", // Ensure the policyId is correctly set
+          policyId: policyData._id || "",
           clientName: policyData.clientName?._id || "",
           companyName: policyData.companyName?._id || "",
           mainCategory: policyData.mainCategory?._id || "",
@@ -72,7 +71,7 @@ export default function UpdatePolicy() {
           policyAmount: policyData.policyAmount || "",
           policyAttachment: policyData.policyAttachment || null,
         });
-        console.log("Fetched Policy Data: ", policyData);
+        console.log("Fetched Policy Data: ", formData);
         setClients(clientsData);
         setCompanies(companiesData);
         setMainCategories(maincategoriesData);
@@ -146,7 +145,10 @@ export default function UpdatePolicy() {
   };
 
   const handleFileChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.files[0] });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.files[0], // Only set the first file
+    });
   };
 
   //form 1 handle submit
@@ -179,48 +181,50 @@ export default function UpdatePolicy() {
   // Form 2: Handle submit for sub-policy data
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form Data on Submit: ", formData);
 
-    // Ensure policyId is correctly set
+    console.log("Form Data on Submit: ", formData); // Debug the formData
+
     if (!formData.policyId) {
       console.log("Policy ID is missing", formData.policyId);
-      return;
+      return; // Exit the function if the policyId is missing
     }
 
     try {
-      const formDataPayload = {
-        policyId: formData.policyId, // This should be your policy ID
-        companyName: formData.companyName,
-        issueDate: new Date(formData.issueDate).toISOString(), // Convert to ISO string format
-        expiryDate: new Date(formData.expiryDate).toISOString(), // Convert to ISO string format
-        policyAmount: formData.policyAmount,
-        policyAttachment: formData.policyAttachment,
-      };
+      const formDataPayload = new FormData();
+      formDataPayload.append("policyId", formData.policyId);
+      formDataPayload.append("companyName", formData.companyName);
+      formDataPayload.append(
+        "issueDate",
+        new Date(formData.issueDate).toISOString()
+      );
+      formDataPayload.append(
+        "expiryDate",
+        new Date(formData.expiryDate).toISOString()
+      );
+      formDataPayload.append("policyAmount", formData.policyAmount);
 
-      let response;
+      // Append file if exists
+      if (formData.policyAttachment) {
+        formDataPayload.append("policyAttachment", formData.policyAttachment);
+      }
 
-      // If selectedPolicy exists, it means we're updating an existing sub-policy
       const apiUrl = selectedPolicy
-        ? `http://localhost:8000/api/policy/${formData.policyId}/sub-policy/${selectedPolicy._id}` // Update sub-policy
-        : `http://localhost:8000/api/policy/${formData.policyId}/sub-policy`; // Add new sub-policy
+        ? `http://localhost:8000/api/policy/${formData.policyId}/sub-policy/${selectedPolicy._id}`
+        : `http://localhost:8000/api/policy/${formData.policyId}/sub-policy`;
+      const method = selectedPolicy ? "PUT" : "POST";
 
-      const method = selectedPolicy ? "PUT" : "POST"; // Determine the HTTP method (PUT for update, POST for new)
-
-      response = await fetch(apiUrl, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formDataPayload),
+      const response = await fetch(apiUrl, {
+        method: method,
+        body: formDataPayload,
       });
 
       if (response.ok) {
         const data = await response.json();
         console.log("API response:", data);
-        const updatedSubPolicy = data.subPolicy || data; // Sub-policy is returned in the response
 
-        // If we are updating a sub-policy
+        const updatedSubPolicy = data.subPolicy || data;
         if (selectedPolicy) {
+          // Update the existing sub-policy in state
           setPolicy((prevPolicy) => ({
             ...prevPolicy,
             subPolicy: prevPolicy.subPolicy.map((sub) =>
@@ -228,12 +232,23 @@ export default function UpdatePolicy() {
             ),
           }));
         } else {
-          // If we are adding a new sub-policy
+          // Add the new sub-policy to state
           setPolicy((prevPolicy) => ({
             ...prevPolicy,
             subPolicy: [...prevPolicy.subPolicy, updatedSubPolicy],
           }));
         }
+
+        // Reset form fields after submission
+        setFormData({
+          policyId: "",
+          companyName: "",
+          issueDate: "",
+          expiryDate: "",
+          policyAmount: "",
+          policyAttachment: null,
+        });
+        setIsOpenPolicyAttachment(false);
 
         showSuccessToast(
           selectedPolicy
@@ -560,7 +575,7 @@ export default function UpdatePolicy() {
                     ) : (
                       <>
                         <input
-                          type="hidden"
+                          type="text"
                           name="policyId"
                           value={formData.policyId || ""}
                           onChange={handleInputChange}
@@ -601,7 +616,11 @@ export default function UpdatePolicy() {
                             type="date"
                             name="issueDate"
                             className="form-control"
-                            value={formData.issueDate}
+                            value={
+                              formData.issueDate
+                                ? formData.issueDate.split("T")[0]
+                                : ""
+                            }
                             onChange={handleInputChange}
                           />
                           {errors.issueDate && (
@@ -623,7 +642,11 @@ export default function UpdatePolicy() {
                             type="date"
                             name="expiryDate"
                             className="form-control"
-                            value={formData.expiryDate}
+                            value={
+                              formData.expiryDate
+                                ? formData.expiryDate.split("T")[0]
+                                : ""
+                            }
                             onChange={handleInputChange}
                           />
                           {console.log("formdata expiry", formData.expiryDate)}
@@ -697,13 +720,8 @@ export default function UpdatePolicy() {
                                 }}
                               >
                                 {formData.policyAttachment &&
-                                typeof formData.policyAttachment === "string"
-                                  ? formData.policyAttachment
-                                      .split("/")
-                                      .pop()
-                                      .replace(/-\d+/, "")
-                                  : formData.policyAttachment
-                                  ? formData.policyAttachment
+                                typeof formData.policyAttachment === "object"
+                                  ? formData.policyAttachment.name
                                   : "No Policy Attachment Available"}
                               </span>
                               <button
@@ -835,107 +853,134 @@ export default function UpdatePolicy() {
                         </tr>
                       </thead>
                       <tbody className="list form-check-all">
-                        {/* {policy.subPolicy.length > 0 ? ( */}
-                        {policy.subPolicy?.map((policy, index) => (
-                          <tr key={index}>
-                            {/* Serial Number */}
-                            <td
-                              className="serial number"
-                              data-sort="serial number"
-                              style={{ fontSize: ".8rem" }}
-                            >
-                              {index + 1}
-                            </td>
-                            {/* Company Name */}
-                            <td
-                              className="issue_date"
-                              style={{ fontSize: ".8rem" }}
-                            >
-                              {getCompanyNameById(policy.companyName)}
-                            </td>
-                            {/* Issue Date */}
-                            <td
-                              className="issue_date"
-                              style={{ fontSize: ".8rem" }}
-                            >
-                              {policy.issueDate.split("T")[0]}
-                            </td>
-
-                            {/* Expiry Date */}
-                            <td
-                              className="expiry_date"
-                              style={{ fontSize: ".8rem" }}
-                            >
-                              {policy.expiryDate.split("T")[0]}
-                            </td>
-                            <td
-                              className="policy_amount"
-                              style={{ fontSize: ".8rem" }}
-                            >
-                              &nbsp; &nbsp; &nbsp;
-                              {policy.policyAmount}
-                            </td>
-
-                            {/* Policy Attachment Link */}
-                            <td
-                              style={{
-                                fontSize: ".8rem",
-                                textAlign: "center",
-                              }}
-                            >
-                              {policy?.policyAttachment ? (
-                                <Link
-                                  to={`http://localhost:8000/uploads/${policy?.policyAttachment}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <i
-                                    className="ri-pushpin-fill"
-                                    style={{
-                                      color: "#405189",
-                                      cursor: "pointer",
-                                      fontSize: "15px",
-                                    }}
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    data-bs-title={policy?.policyAttachment}
-                                  ></i>
-                                </Link>
-                              ) : (
-                                "No Attachment"
-                              )}
-                            </td>
-
-                            {/* Edit and Delete Actions */}
-                            <td>
-                              <div
-                                className="d-flex gap-2 justify-content-center"
-                                style={{ textAlign: "-webkit-center" }}
+                        {policy?.subPolicy?.length > 0 ? (
+                          policy?.subPolicy?.map((policyItem, index) => (
+                            <tr key={index}>
+                              {/* Serial Number */}
+                              <td
+                                className="serial number"
+                                style={{ fontSize: ".8rem" }}
                               >
-                                {/* Edit Button */}
-                                <div className="edit">
-                                  {/* {console.log("Client ID:", policy.id)} */}
-                                  <Link
-                                    to={`/policy-update-form/${policy._id}`}
-                                    onClick={() => handleEdit(policy)}
-                                    style={{ textDecoration: "none" }}
+                                {index + 1}
+                              </td>
+                              {/* Company Name */}
+                              <td
+                                className="issue_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {getCompanyNameById(policyItem.companyName)}
+                              </td>
+                              {/* Issue Date */}
+                              <td
+                                className="issue_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {policyItem.issueDate.split("T")[0]}
+                              </td>
+                              {/* Expiry Date */}
+                              <td
+                                className="expiry_date"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                {policyItem.expiryDate.split("T")[0]}
+                              </td>
+                              {/* Policy Amount */}
+                              <td
+                                className="policy_amount"
+                                style={{ fontSize: ".8rem" }}
+                              >
+                                &nbsp; &nbsp; &nbsp;
+                                {policyItem.policyAmount}
+                              </td>
+                              {/* Policy Attachment Link */}
+                              <td className="text-center">
+                                {policyItem.policyAttachment &&
+                                policyItem.policyAttachment.length > 0 ? (
+                                  <a
+                                    href={`http://localhost:8000${policyItem.policyAttachment[0]}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                   >
-                                    <i className="ri-edit-2-line"></i>
-                                  </Link>
+                                    <i
+                                      className="ri-pushpin-fill"
+                                      style={{
+                                        color: "rgb(64, 81, 137)",
+                                        cursor: "pointer",
+                                        fontSize: "15px",
+                                      }}
+                                    ></i>
+                                  </a>
+                                ) : (
+                                  "No Attachment Available"
+                                )}
+                              </td>
+                              {/* Edit and Delete Actions */}
+                              <td>
+                                <div
+                                  className="d-flex gap-2 justify-content-center"
+                                  style={{ textAlign: "-webkit-center" }}
+                                >
+                                  {/* Edit Button */}
+                                  <div className="edit">
+                                    <Link
+                                      to={`/policy-update-form/${policyItem._id}`}
+                                      onClick={() => handleEdit(policyItem)}
+                                      style={{ textDecoration: "none" }}
+                                    >
+                                      <i className="ri-edit-2-line"></i>
+                                    </Link>
+                                  </div>
+                                  {/* Delete Button */}
+                                  <div className="remove">
+                                    <Link
+                                      onClick={() => handleDelete(policyItem)}
+                                      style={{ textDecoration: "none" }}
+                                    >
+                                      <i className="ri-delete-bin-2-line"></i>
+                                    </Link>
+                                  </div>
                                 </div>
-                                {/* Delete Button */}
-                                <div className="remove">
-                                  <Link
-                                    onClick={() => handleDelete(policy)}
-                                    style={{ textDecoration: "none" }}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7">
+                              <div className="noresult">
+                                <div className="text-center">
+                                  <lord-icon
+                                    src="https://cdn.lordicon.com/msoeawqm.json"
+                                    trigger="loop"
+                                    colors="primary:#121331,secondary:#08a88a"
+                                    style={{
+                                      width: "75px",
+                                      height: "75px",
+                                    }}
+                                  ></lord-icon>
+                                  <h5
+                                    className="mt-2"
+                                    style={{
+                                      fontSize: "16.25px",
+                                      color: "#495957",
+                                    }}
                                   >
-                                    <i className="ri-delete-bin-2-line"></i>
-                                  </Link>
+                                    Sorry! No Result Found
+                                  </h5>
+                                  <p
+                                    className="text-muted mb-0"
+                                    style={{
+                                      fontSize: "13px",
+                                      color: "#878A99",
+                                    }}
+                                  >
+                                    We've searched more than 150+ Orders. We did
+                                    not find any orders for your search.
+                                  </p>
                                 </div>
                               </div>
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>

@@ -285,6 +285,7 @@ export default function ClientTable({ handleMenuClick }) {
                                   client.lastName || ""
                                 }`}
                               </td>
+                              {console.log("client name", client)}
 
                               {/* Email */}
                               <td
@@ -383,7 +384,7 @@ export default function ClientTable({ handleMenuClick }) {
                                 >
                                   {/* Edit Button */}
                                   <div className="edit">
-                                    {console.log("Client ID:", clients.id)}
+                                    {console.log("Client ID:", client._id)}
                                     <Link
                                       to={`/client-update-form/${client._id}`}
                                       onClick={() =>

@@ -4,9 +4,12 @@ import * as bootstrap from "bootstrap";
 
 export default function Notification({ handleMenuClick }) {
   const [policy, setPolicy] = useState([]);
+  const [clients, setClients] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterOption, setFilterOption] = useState("all");
   const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [selectedClientEmail, setSelectedClientEmail] = useState("");
+  const [emailModalVisible, setEmailModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,6 +101,103 @@ export default function Notification({ handleMenuClick }) {
     const modal = new bootstrap.Modal(document.getElementById("showModal"));
     modal.show();
   };
+
+  const handleSendEmailClick = (policy) => {
+    setSelectedPolicy(policy);
+
+    // Find the client based on the policy's clientName.clientId
+    const client = clients.find(
+      (client) => client._id === policy.clientName._id
+    );
+
+    // Check if client exists and if their email is available
+    if (client) {
+      // Check if the client has an email
+      if (client.email) {
+        setSelectedClientEmail(client.email);
+      } else {
+        setSelectedClientEmail("No email found");
+        alert("Client email is missing.");
+      }
+    } else {
+      setSelectedClientEmail("Client not found");
+      alert("Client not found.");
+    }
+
+    // Show the email modal
+    setEmailModalVisible(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedClientEmail) {
+      alert("Client email is missing.");
+      return;
+    }
+
+    const subject = "Insurance Policy from Tryangle Tech";
+    const body = `
+     
+    
+    Dear ${selectedPolicy?.clientName?.firstName} ${
+      selectedPolicy?.clientName?.lastName
+    },  
+    
+    I hope this message finds you well.  
+    
+    We are writing to remind you that your policy (Policy Number: ${
+      selectedPolicy?.policyNumber
+    }) is approaching its expiry date on ${
+      selectedPolicy?.subPolicy[0]?.expiryDate.split("T")[0]
+    }.  
+    
+    To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
+    
+    If you have any questions or require assistance, our team is here to help. Please don't hesitate to reach out.  
+    
+    Warm regards,  
+    Insurance Company
+    `;
+
+    try {
+      const response = await fetch("http://localhost:8000/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: selectedClientEmail,
+          subject: subject,
+          body: body,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Email sent successfully!");
+        setEmailModalVisible(false);
+      } else {
+        alert("Failed to send email.");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+    }
+  };
+
+  // Function to fetch company name based on companyName ID in subPolicy
+  const getCompanyNameById = (companyId) => {
+    // Assuming the policy data has a list of companies stored in 'clients'
+    const company = policy.find((policy) => policy._id === companyId);
+
+    // If the company exists in the policy, return its name, otherwise "No Company Found"
+    return company ? company.companyName : "No Company Name Found";
+  };
+
+  // Assuming `selectedPolicy` is correctly set from the policies data
+  const companyId = selectedPolicy?.subPolicy[0]?.companyName; // Get companyId from subPolicy
+  console.log("companyId", companyId);
+  const companyName = getCompanyNameById(companyId);
+  console.log("Company Name:", companyName);
 
   return (
     <>
@@ -416,6 +516,202 @@ export default function Notification({ handleMenuClick }) {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Email Modal */}
+      {emailModalVisible && (
+        <div
+          className="modal fade show"
+          style={{ display: "block" }}
+          tabIndex="-1"
+          role="dialog"
+        >
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Send Email</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setEmailModalVisible(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>
+                  <strong>Client Email:</strong> {selectedClientEmail}
+                  {console.log("selectedClientEmail", selectedClientEmail)}
+                </p>
+                <p>
+                  <strong>Policy Number:</strong> {selectedPolicy?.policyNumber}
+                </p>
+                <p>
+                  <strong>Message:</strong>
+                </p>
+                <textarea
+                  className="form-control"
+                  rows="4"
+                  defaultValue={`
+Subject: Upcoming Policy Expiry Notice  
+
+Dear ${selectedPolicy?.clientName?.firstName} ${
+                    selectedPolicy?.clientName?.lastName
+                  },  
+
+I hope this message finds you well.  
+
+We are writing to remind you that your policy (Policy Number: ${
+                    selectedPolicy?.policyNumber
+                  }) is approaching its expiry date on ${
+                    selectedPolicy?.subPolicy[0]?.expiryDate.split("T")[0]
+                  }.  
+
+To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
+
+If you have any questions or require assistance, our team is here to help. Please don't hesitate to reach out.  
+
+Warm regards,  
+Insurance Company
+`}
+                ></textarea>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-light"
+                  onClick={() => setEmailModalVisible(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={handleSendEmail}
+                >
+                  Send Email
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Detail Modal */}
+      <div
+        className="modal fade"
+        id="showModal"
+        tabIndex="-1"
+        aria-labelledby="exampleModalLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header bg-light p-3">
+              <h5
+                className="modal-title"
+                id="exampleModalLabel"
+                style={{ fontSize: "16.25px", color: "#495057" }}
+              >
+                View Detail
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body row d-flex flex-wrap justify-content-center">
+              {selectedPolicy && (
+                <>
+                  {/* policy number */}
+                  <div className="mb-3 col-md-6">
+                    <label
+                      htmlFor="policyNumber-field"
+                      className="form-label"
+                      style={{ fontSize: "13px", color: "#495057" }}
+                    >
+                      Policy Number:
+                    </label>
+                    <input
+                      type="number"
+                      name="policyNumber"
+                      className="form-control"
+                      value={selectedPolicy.policyNumber}
+                    />
+                  </div>
+                  {/* client name */}
+                  <div className="mb-3 col-md-6">
+                    <label
+                      htmlFor="customername-field"
+                      className="form-label"
+                      style={{ fontSize: "13px", color: "#495057" }}
+                    >
+                      Client Name:
+                    </label>
+                    <input
+                      type="text"
+                      name="clientName"
+                      className="form-control"
+                      value={`${selectedPolicy.clientName?.firstName} ${selectedPolicy.clientName?.lastName}`}
+                    />
+                  </div>
+                  {/* company name */}
+                  <div className="mb-3 col-md-6">
+                    <label
+                      htmlFor="companyname-field"
+                      className="form-label"
+                      style={{ fontSize: "13px", color: "#495057" }}
+                    >
+                      Company Name:
+                    </label>
+                    <input
+                      type="text"
+                      name="companyName"
+                      className="form-control"
+                      // value={
+                      //   selectedPolicy?.companyName
+                      //     ? getCompanyName(selectedPolicy.companyName)
+                      //     : "N/A"
+                      // }
+                      value={companyName ? companyName : "Company Not Found"}
+                      readOnly
+                    />
+                  </div>
+                  {console.log(
+                    "selectedPolicy 1",
+                    selectedPolicy.subPolicy[0].companyName
+                  )}
+                  {/* policy name */}
+                  <div className="mb-3 col-md-6">
+                    <label
+                      htmlFor="policyName-field"
+                      className="form-label"
+                      style={{ fontSize: "13px", color: "#495057" }}
+                    >
+                      Policy Name:
+                    </label>
+                    <input
+                      type="text"
+                      name="policyName"
+                      className="form-control"
+                      value={selectedPolicy.subCategory?.subCategoryName}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-light cancel-btn"
+                data-bs-dismiss="modal"
+                style={{ fontSize: "13px" }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

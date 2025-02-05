@@ -28,6 +28,8 @@ export default function PolicyTable({ handleMenuClick }) {
     fetchData();
   }, []);
 
+  console.log("policy data is ....", policy);
+
   // Helper function to get company name by ID
   const getCompanyNameById = (companyId) => {
     const companyObj = company.find((comp) => comp._id === companyId);
@@ -52,6 +54,8 @@ export default function PolicyTable({ handleMenuClick }) {
     );
   });
 
+  console.log("filteredData", filteredData);
+
   // Pagination logic
   const rowsPerPage = 5;
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -59,6 +63,8 @@ export default function PolicyTable({ handleMenuClick }) {
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
+
+  console.log("currentData", currentData);
 
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages) {
@@ -252,9 +258,12 @@ export default function PolicyTable({ handleMenuClick }) {
                                 {policy.policyNumber}
                               </td>
                               <td style={{ fontSize: ".8rem" }}>
-                                {policy.clientName?.firstName}{" "}
-                                {policy.clientName?.lastName}
+                                {`${policy.clientName?.firstName} ${policy.clientName?.lastName}`}
                               </td>
+                              {console.log(
+                                "policy client name",
+                                policy?.clientName?.firstName
+                              )}
                               <td style={{ fontSize: ".8rem" }}>
                                 {getCompanyNameById(
                                   policy.subPolicy[0].companyName
