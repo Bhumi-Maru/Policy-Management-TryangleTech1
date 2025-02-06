@@ -444,7 +444,6 @@ export default function UpdatePolicy() {
       });
     };
   }, [policy.subPolicy]);
-
   return (
     <>
       {/* form 1 */}
@@ -575,7 +574,7 @@ export default function UpdatePolicy() {
                     ) : (
                       <>
                         <input
-                          type="text"
+                          type="hidden"
                           name="policyId"
                           value={formData.policyId || ""}
                           onChange={handleInputChange}
@@ -908,6 +907,11 @@ export default function UpdatePolicy() {
                                         cursor: "pointer",
                                         fontSize: "15px",
                                       }}
+                                      data-bs-toggle="tooltip"
+                                      data-bs-placement="top"
+                                      data-bs-title={
+                                        policyItem.policyAttachment
+                                      }
                                     ></i>
                                   </a>
                                 ) : (

@@ -4,6 +4,8 @@ import * as bootstrap from "bootstrap";
 import "./Dashboard.css";
 
 export default function Dashboard({ handleMenuClick }) {
+  const [companyName, setCompanyName] = useState("");
+  const [loading, setLoading] = useState(false);
   const [policy, setPolicy] = useState([]);
   const [clients, setClients] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -190,20 +192,47 @@ export default function Dashboard({ handleMenuClick }) {
     }
   };
 
-  // Function to fetch company name based on companyName ID in subPolicy
-  const getCompanyNameById = (companyId) => {
-    // Assuming the policy data has a list of companies stored in 'clients'
-    const company = policy.find((policy) => policy._id === companyId);
+  // Function to fetch company name from API using companyId
+  const getCompanyNameById = async (companyId) => {
+    try {
+      // Fetch company details from the API
+      const response = await fetch(
+        `http://localhost:8000/api/company?id=${companyId}`
+      );
+      const data = await response.json();
 
-    // If the company exists in the policy, return its name, otherwise "No Company Found"
-    return company ? company.companyName : "No Company Name Found";
+      console.log("data", data); // Log the response to inspect it
+
+      // Check if data was returned and contains a matching company ID
+      const matchingCompany = data.find((company) => company._id === companyId); // Find the company by matching _id
+
+      if (matchingCompany) {
+        return matchingCompany.companyName; // Return the company name if found
+      } else {
+        return "No Company Name Found"; // If no company name was found
+      }
+    } catch (error) {
+      console.error("Error fetching company data:", error);
+      return "Error fetching company data"; // If the API call fails
+    }
   };
 
-  // Assuming `selectedPolicy` is correctly set from the policies data
-  const companyId = selectedPolicy?.subPolicy[0]?.companyName; // Get companyId from subPolicy
-  console.log("companyId", companyId);
-  const companyName = getCompanyNameById(companyId);
-  console.log("Company Name:", companyName);
+  // Assuming selectedPolicy is correctly set
+  const companyId = selectedPolicy?.subPolicy[0]?.companyName; // Fetch companyId, which should match one of the company IDs in the response
+  console.log("companyId", companyId); // Log the companyId
+
+  const fetchCompanyName = async () => {
+    setLoading(true); // Set loading to true when starting the fetch
+    const name = await getCompanyNameById(companyId); // Await the result
+    setCompanyName(name); // Set the company name in state
+    setLoading(false); // Set loading to false after the fetch is complete
+  };
+
+  useEffect(() => {
+    if (companyId) {
+      fetchCompanyName(); // Call the async function to fetch and log the company name
+    }
+  }, [companyId]); // Only call fetchCompanyName when companyId changes
 
   return (
     <>
@@ -580,17 +609,29 @@ export default function Dashboard({ handleMenuClick }) {
                                         </td>
 
                                         {/* Document Link */}
+                                        {/* Policy Attachment with Hover Tooltip */}
                                         <td style={{ textAlign: "center" }}>
-                                          {policy.policyAttachment ? (
+                                          {policy?.subPolicy?.[0]
+                                            ?.policyAttachment ? (
                                             <a
-                                              href={`http://localhost:8000${policy.policyAttachment}`}
+                                              href={`http://localhost:8000${policy.subPolicy[0].policyAttachment}`}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                              style={{ textDecoration: "none" }}
                                               data-bs-toggle="tooltip"
-                                              title={policy.policyAttachment
-                                                .split(/[/\\]/)
-                                                .pop()}
+                                              title={
+                                                // Ensure the attachment is a valid string before calling .split()
+                                                typeof policy.subPolicy[0]
+                                                  .policyAttachment ===
+                                                  "string" &&
+                                                policy.subPolicy[0].policyAttachment.trim() !==
+                                                  ""
+                                                  ? policy.subPolicy[0].policyAttachment
+                                                      .split("/")
+                                                      .pop()
+                                                  : policy.subPolicy[0]
+                                                      .policyAttachment
+                                              }
+                                              style={{ textDecoration: "none" }}
                                             >
                                               <i
                                                 className="ri-pushpin-fill"
@@ -602,7 +643,16 @@ export default function Dashboard({ handleMenuClick }) {
                                               ></i>
                                             </a>
                                           ) : (
-                                            "No Attachment"
+                                            <span
+                                              data-bs-toggle="tooltip"
+                                              title="No Attachment Available"
+                                              style={{
+                                                color: "grey",
+                                                cursor: "not-allowed",
+                                              }}
+                                            >
+                                              <i className="ri-pushpin-fill"></i>
+                                            </span>
                                           )}
                                         </td>
 
@@ -960,7 +1010,7 @@ Insurance Company
                       //     ? getCompanyName(selectedPolicy.companyName)
                       //     : "N/A"
                       // }
-                      value={companyName ? companyName : "Company Not Found"}
+                      value={companyName}
                       readOnly
                     />
                   </div>
