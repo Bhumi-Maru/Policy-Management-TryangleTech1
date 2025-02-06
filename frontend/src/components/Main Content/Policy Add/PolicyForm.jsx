@@ -139,7 +139,12 @@ export default function PolicyForm() {
                 {error && <p className="text-danger">Error: {error}</p>}
 
                 <div className="col-md-4">
-                  <label className="form-label">Policy Number</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Policy Number
+                  </label>
                   <input
                     type="number"
                     name="policyNumber"
@@ -153,7 +158,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Client Name</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Client Name
+                  </label>
                   <Select
                     options={clients.map((client) => ({
                       value: client._id,
@@ -170,7 +180,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Company Name</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Company Name
+                  </label>
                   <Select
                     options={companies.map((company) => ({
                       value: company._id,
@@ -187,7 +202,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Main Category</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Main Category
+                  </label>
                   <Select
                     options={mainCategories.map((category) => ({
                       value: category._id,
@@ -204,7 +224,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Sub Category</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Sub Category
+                  </label>
                   <Select
                     options={subCategories.map((sub) => ({
                       value: sub._id,
@@ -221,7 +246,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Issue Date</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Issue Date
+                  </label>
                   <input
                     type="date"
                     name="issueDate"
@@ -235,7 +265,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Expiry Date</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Expiry Date
+                  </label>
                   <input
                     type="date"
                     name="expiryDate"
@@ -249,7 +284,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Policy Amount</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Policy Amount
+                  </label>
                   <input
                     type="number"
                     name="policyAmount"
@@ -263,7 +303,12 @@ export default function PolicyForm() {
                 </div>
 
                 <div className="col-md-4">
-                  <label>Policy Attachment</label>
+                  <label
+                    className="form-label"
+                    style={{ fontSize: "13px", fontWeight: "bold" }}
+                  >
+                    Policy Attachment
+                  </label>
                   <input
                     type="file"
                     name="policyAttachment"
@@ -278,8 +323,15 @@ export default function PolicyForm() {
                   )}
                 </div>
 
-                <div className="col-md-2 position-relative d-flex justify-content-center align-items-center">
-                  <button type="submit" className="btn w-100 btn-submit">
+                <div
+                  className="col-md-2 position-relative d-flex justify-content-center align-items-center"
+                  style={{ left: "826px" }}
+                >
+                  <button
+                    type="submit"
+                    className="btn w-100 btn-submit"
+                    style={{ fontSize: "13px" }}
+                  >
                     Submit
                   </button>
                 </div>
