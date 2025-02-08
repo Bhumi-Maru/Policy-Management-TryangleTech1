@@ -684,6 +684,7 @@ export default function Dashboard({ handleMenuClick }) {
                                                 <i className="ri-mail-line"></i>
                                               </Link>
                                             </div>
+
                                             {/* WhatsApp button */}
                                             <div className="view">
                                               <Link

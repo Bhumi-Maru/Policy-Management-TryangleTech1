@@ -12,20 +12,24 @@ export default function Notification({ handleMenuClick }) {
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [selectedClientEmail, setSelectedClientEmail] = useState("");
   const [emailModalVisible, setEmailModalVisible] = useState(false);
+  const [emailContent, setEmailContent] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const policyRes = await fetch("http://localhost:8000/api/policy");
+        const clientsRes = await fetch("http://localhost:8000/api/clients");
         const policyData = await policyRes.json();
+        const clientsData = await clientsRes.json();
         setPolicy(policyData);
+        setClients(clientsData);
+        console.log("clientsData", clientsData);
       } catch (error) {
         console.error("Error fetching policy Dashboard data:", error);
       }
     };
     fetchData();
   }, []);
-
   console.log("policy 111", policy);
 
   // Calculate remaining days
@@ -106,15 +110,10 @@ export default function Notification({ handleMenuClick }) {
 
   const handleSendEmailClick = (policy) => {
     setSelectedPolicy(policy);
-
-    // Find the client based on the policy's clientName.clientId
     const client = clients.find(
       (client) => client._id === policy.clientName._id
     );
-
-    // Check if client exists and if their email is available
     if (client) {
-      // Check if the client has an email
       if (client.email) {
         setSelectedClientEmail(client.email);
       } else {
@@ -126,7 +125,20 @@ export default function Notification({ handleMenuClick }) {
       alert("Client not found.");
     }
 
-    // Show the email modal
+    // Set default email content based on policy details
+    const defaultEmailContent = `Subject: Upcoming Policy Expiry\n\nDear ${
+      policy.clientName.firstName
+    } ${
+      policy.clientName.lastName
+    },\n\nWe are writing to remind you that your policy (Policy Number: ${
+      policy.policyNumber
+    }) is approaching its expiry date on ${
+      policy.subPolicy[0]?.expiryDate.split("T")[0]
+    }. You have ${calculateDaysLeft(
+      policy.subPolicy[0]?.expiryDate.split("T")[0]
+    )} remaining to renew your policy. To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.\n\nPlease don't hesitate to reach out if you need assistance.\n\nWarm regards, Insurance Company`;
+    setEmailContent(defaultEmailContent);
+
     setEmailModalVisible(true);
   };
 
@@ -137,28 +149,7 @@ export default function Notification({ handleMenuClick }) {
     }
 
     const subject = "Insurance Policy from Tryangle Tech";
-    const body = `
-     
-    
-    Dear ${selectedPolicy?.clientName?.firstName} ${
-      selectedPolicy?.clientName?.lastName
-    },  
-    
-    I hope this message finds you well.  
-    
-    We are writing to remind you that your policy (Policy Number: ${
-      selectedPolicy?.policyNumber
-    }) is approaching its expiry date on ${
-      selectedPolicy?.subPolicy[0]?.expiryDate.split("T")[0]
-    }.  
-    
-    To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
-    
-    If you have any questions or require assistance, our team is here to help. Please don't hesitate to reach out.  
-    
-    Warm regards,  
-    Insurance Company
-    `;
+    const body = emailContent; // Use the edited email content
 
     try {
       const response = await fetch("http://localhost:8000/api/send-email", {
@@ -172,9 +163,7 @@ export default function Notification({ handleMenuClick }) {
           body: body,
         }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         alert("Email sent successfully!");
         setEmailModalVisible(false);
@@ -184,6 +173,11 @@ export default function Notification({ handleMenuClick }) {
     } catch (error) {
       console.error("Error sending email:", error);
     }
+  };
+
+  // Handle changes to the email content in the textarea
+  const handleEmailContentChange = (event) => {
+    setEmailContent(event.target.value);
   };
 
   // Function to fetch company name from API using companyId
@@ -488,15 +482,21 @@ export default function Notification({ handleMenuClick }) {
                                                 <i className="bx bx-show"></i>
                                               </Link>
                                             </div>
+                                            {/* mail button */}
                                             <div className="view">
                                               <Link
                                                 style={{
                                                   textDecoration: "none",
+                                                  cursor: "pointer",
                                                 }}
+                                                onClick={() =>
+                                                  handleSendEmailClick(policy)
+                                                }
                                               >
                                                 <i className="ri-mail-line"></i>
                                               </Link>
                                             </div>
+                                            {/* whatsapp button */}
                                             <div className="view">
                                               <Link
                                                 style={{
@@ -583,7 +583,7 @@ export default function Notification({ handleMenuClick }) {
           <div className="modal-dialog modal-dialog-centered" role="document">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Send Email</h5>
+                <h5 className="modal-title-email">Send Email</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -591,41 +591,21 @@ export default function Notification({ handleMenuClick }) {
                 ></button>
               </div>
               <div className="modal-body">
-                <p>
+                <p style={{ fontSize: "13px" }}>
                   <strong>Client Email:</strong> {selectedClientEmail}
                   {console.log("selectedClientEmail", selectedClientEmail)}
                 </p>
-                <p>
+                <p style={{ fontSize: "13px" }}>
                   <strong>Policy Number:</strong> {selectedPolicy?.policyNumber}
                 </p>
-                <p>
+                <p style={{ fontSize: "13px" }}>
                   <strong>Message:</strong>
                 </p>
                 <textarea
                   className="form-control"
                   rows="4"
-                  defaultValue={`
-Subject: Upcoming Policy Expiry Notice  
-
-Dear ${selectedPolicy?.clientName?.firstName} ${
-                    selectedPolicy?.clientName?.lastName
-                  },  
-
-I hope this message finds you well.  
-
-We are writing to remind you that your policy (Policy Number: ${
-                    selectedPolicy?.policyNumber
-                  }) is approaching its expiry date on ${
-                    selectedPolicy?.subPolicy[0]?.expiryDate.split("T")[0]
-                  }.  
-
-To ensure uninterrupted coverage and continued peace of mind, we kindly encourage you to review your policy and consider renewing it at your earliest convenience.  
-
-If you have any questions or require assistance, our team is here to help. Please don't hesitate to reach out.  
-
-Warm regards,  
-Insurance Company
-`}
+                  value={emailContent} // Bind the textarea value to the state
+                  onChange={handleEmailContentChange}
                 ></textarea>
               </div>
               <div className="modal-footer">
@@ -633,6 +613,7 @@ Insurance Company
                   type="button"
                   className="btn btn-light"
                   onClick={() => setEmailModalVisible(false)}
+                  style={{ fontSize: "13px" }}
                 >
                   Cancel
                 </button>
@@ -640,6 +621,7 @@ Insurance Company
                   type="button"
                   className="btn btn-success"
                   onClick={handleSendEmail}
+                  style={{ fontSize: "13px" }}
                 >
                   Send Email
                 </button>

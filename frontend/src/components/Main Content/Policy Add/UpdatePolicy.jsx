@@ -186,7 +186,7 @@ export default function UpdatePolicy() {
 
     if (!formData.policyId) {
       console.log("Policy ID is missing", formData.policyId);
-      return; // Exit the function if the policyId is missing
+      return;
     }
 
     try {
