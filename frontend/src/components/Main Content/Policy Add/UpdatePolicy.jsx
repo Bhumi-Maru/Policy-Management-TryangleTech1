@@ -574,7 +574,7 @@ export default function UpdatePolicy() {
                     ) : (
                       <>
                         <input
-                          type="hidden"
+                          type="text"
                           name="policyId"
                           value={formData.policyId || ""}
                           onChange={handleInputChange}

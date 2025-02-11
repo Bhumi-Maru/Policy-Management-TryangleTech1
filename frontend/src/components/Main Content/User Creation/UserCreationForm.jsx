@@ -87,14 +87,14 @@ export default function UserCreationForm() {
   // Display a success toast message
   const showSuccessToast = (message) => {
     const toastHTML = `
-          <div className="toast fade show position-fixed top-0 end-0 m-3" role="alert" style="z-index: 1055; background-color: white">
-            <div className="toast-header">
-              <img src="assets/images/logo-sm.png" className="rounded me-2" alt="..." height="20" />
-              <strong className="me-auto">Velzon</strong>
+          <div class="toast fade show position-fixed top-0 end-0 m-3" role="alert" style="z-index: 1055; background-color: white">
+            <div class="toast-header">
+              <img src="assets/images/logo-sm.png" class="rounded me-2" alt="..." height="20" />
+              <strong class="me-auto">Velzon</strong>
               <small>Just now</small>
-              <button type="button" className="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            <div className="toast-body">${message}</div>
+            <div class="toast-body">${message}</div>
           </div>
         `;
 
